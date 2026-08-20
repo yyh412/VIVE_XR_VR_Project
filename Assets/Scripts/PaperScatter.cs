@@ -7,6 +7,10 @@ public class PaperScatter : MonoBehaviour
     public Rigidbody[] papers;
 
 
+    // ==========================================================
+    // Scatter Direction
+    // ==========================================================
+
     [Header("Scatter Direction")]
 
     // 水平散开的最小速度
@@ -23,11 +27,19 @@ public class PaperScatter : MonoBehaviour
     public float backwardAmount = 0.25f;
 
 
+    // ==========================================================
+    // Rotation
+    // ==========================================================
+
     [Header("Rotation")]
 
     // 初始旋转速度
     public float torqueForce = 0.25f;
 
+
+    // ==========================================================
+    // Air Time
+    // ==========================================================
 
     [Header("Air Time")]
 
@@ -37,6 +49,10 @@ public class PaperScatter : MonoBehaviour
     // 最长飘动时间
     public float maxAirTime = 2.5f;
 
+
+    // ==========================================================
+    // Flutter
+    // ==========================================================
 
     [Header("Flutter / Paper Floating")]
 
@@ -53,6 +69,10 @@ public class PaperScatter : MonoBehaviour
     public float flutterTorque = 0.03f;
 
 
+    // ==========================================================
+    // Falling
+    // ==========================================================
+
     [Header("Falling")]
 
     // 下落时使用的重力倍率
@@ -60,11 +80,19 @@ public class PaperScatter : MonoBehaviour
     public float gravityMultiplier = 0.35f;
 
 
+    // ==========================================================
+    // Collision
+    // ==========================================================
+
     [Header("Paper Collision")]
 
     // 刚飞出来时纸与纸之间先不碰撞
     public float paperCollisionDelay = 0.3f;
 
+
+    // ==========================================================
+    // Safety Limits
+    // ==========================================================
 
     [Header("Safety Limits")]
 
@@ -78,6 +106,10 @@ public class PaperScatter : MonoBehaviour
     public float maxTotalVelocity = 1.6f;
 
 
+    // ==========================================================
+    // Internal
+    // ==========================================================
+
     private bool scattered = false;
 
 
@@ -90,6 +122,7 @@ public class PaperScatter : MonoBehaviour
     {
         if (scattered)
             return;
+
 
         scattered = true;
 
@@ -111,20 +144,35 @@ public class PaperScatter : MonoBehaviour
                 continue;
 
 
+            // ==========================================
             // 从公文包 / 父物体中脱离
-            rb.transform.SetParent(null, true);
+            // ==========================================
+
+            rb.transform.SetParent(
+                null,
+                true
+            );
 
 
+            // ==========================================
             // 开启物理
+            // ==========================================
+
             rb.isKinematic = false;
 
             // 飘动阶段暂时不用默认重力
             rb.useGravity = false;
 
 
-            // 清除之前可能残留的速度
-            rb.velocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            // ==========================================
+            // 清除残留速度
+            // ==========================================
+
+            rb.velocity =
+                Vector3.zero;
+
+            rb.angularVelocity =
+                Vector3.zero;
 
 
 
@@ -134,7 +182,10 @@ public class PaperScatter : MonoBehaviour
 
             // 左右随机
             float randomSide =
-                Random.Range(-1f, 1f);
+                Random.Range(
+                    -1f,
+                    1f
+                );
 
 
             // 前后随机
@@ -147,12 +198,18 @@ public class PaperScatter : MonoBehaviour
 
 
             Vector3 horizontalDirection =
-                transform.right * randomSide
-                + transform.forward * randomForward;
+                transform.right
+                * randomSide
+                +
+                transform.forward
+                * randomForward;
 
 
             // 防止刚好得到接近零的方向
-            if (horizontalDirection.sqrMagnitude < 0.01f)
+            if (
+                horizontalDirection.sqrMagnitude
+                < 0.01f
+            )
             {
                 horizontalDirection =
                     transform.forward;
@@ -176,7 +233,7 @@ public class PaperScatter : MonoBehaviour
 
 
             // ==========================================
-            // 每张纸向上的速度也略微不同
+            // 每张纸向上的速度略微不同
             // ==========================================
 
             float randomUp =
@@ -192,14 +249,17 @@ public class PaperScatter : MonoBehaviour
             // ==========================================
 
             Vector3 velocity =
-                horizontalDirection * horizontalSpeed
-                + Vector3.up * randomUp;
+                horizontalDirection
+                * horizontalSpeed
+                +
+                Vector3.up
+                * randomUp;
 
 
 
             // ==========================================
             // 安全限制
-            // 防止纸突然飞得很高或很远
+            // 防止突然飞得过高 / 过远
             // ==========================================
 
             Vector3 horizontalVelocity =
@@ -210,7 +270,10 @@ public class PaperScatter : MonoBehaviour
                 );
 
 
-            if (horizontalVelocity.magnitude > maxHorizontalVelocity)
+            if (
+                horizontalVelocity.magnitude
+                > maxHorizontalVelocity
+            )
             {
                 horizontalVelocity =
                     horizontalVelocity.normalized
@@ -218,8 +281,11 @@ public class PaperScatter : MonoBehaviour
             }
 
 
-            velocity.x = horizontalVelocity.x;
-            velocity.z = horizontalVelocity.z;
+            velocity.x =
+                horizontalVelocity.x;
+
+            velocity.z =
+                horizontalVelocity.z;
 
 
             velocity.y =
@@ -230,7 +296,10 @@ public class PaperScatter : MonoBehaviour
                 );
 
 
-            if (velocity.magnitude > maxTotalVelocity)
+            if (
+                velocity.magnitude
+                > maxTotalVelocity
+            )
             {
                 velocity =
                     velocity.normalized
@@ -281,23 +350,59 @@ public class PaperScatter : MonoBehaviour
 
 
 
-            // ==========================================
-            // 每张纸随机飘一段时间
-            // ==========================================
+            // ==================================================
+            // ★ 新增
+            //
+            // 检查这是不是 NPC 要捡的剧情纸
+            // ==================================================
 
-            float airTime =
-                Random.Range(
-                    minAirTime,
-                    maxAirTime
+            StoryPaperLanding storyPaper =
+                rb.GetComponent<StoryPaperLanding>();
+
+
+            if (storyPaper != null)
+            {
+                // ==============================================
+                // 特殊剧情纸
+                //
+                // 它前面已经和普通纸一样：
+                // 1. 从包里脱离
+                // 2. 得到随机初速度
+                // 3. 得到随机旋转
+                //
+                // 接下来不再进入普通 FloatAndFall
+                // 而由 StoryPaperLanding 接管
+                // ==============================================
+
+                storyPaper.StartControlledLanding();
+
+
+                Debug.Log(
+                    "Story Paper Controlled Landing Started: "
+                    + rb.name
                 );
+            }
+            else
+            {
+                // ==============================================
+                // 普通纸
+                // 保持原来的随机飘落逻辑
+                // ==============================================
+
+                float airTime =
+                    Random.Range(
+                        minAirTime,
+                        maxAirTime
+                    );
 
 
-            StartCoroutine(
-                FloatAndFall(
-                    rb,
-                    airTime
-                )
-            );
+                StartCoroutine(
+                    FloatAndFall(
+                        rb,
+                        airTime
+                    )
+                );
+            }
         }
 
 
@@ -311,13 +416,16 @@ public class PaperScatter : MonoBehaviour
         );
 
 
-        Debug.Log("Papers Scattered");
+        Debug.Log(
+            "Papers Scattered"
+        );
     }
 
 
 
     // ==========================================================
-    // 纸张空中飘动，然后慢慢落下
+    // 普通纸：
+    // 空中飘动，然后慢慢落下
     // ==========================================================
 
     private IEnumerator FloatAndFall(
@@ -325,7 +433,8 @@ public class PaperScatter : MonoBehaviour
         float airTime
     )
     {
-        float elapsed = 0f;
+        float elapsed =
+            0f;
 
 
         // 每张纸随机不同的飘动节奏
@@ -338,16 +447,21 @@ public class PaperScatter : MonoBehaviour
 
 
         // ==========================================
-        // 第一阶段：在空中轻轻飘
+        // 第一阶段：
+        // 在空中轻轻飘
         // ==========================================
 
-        while (elapsed < airTime)
+        while (
+            elapsed
+            < airTime
+        )
         {
             if (rb == null)
                 yield break;
 
 
-            elapsed += Time.deltaTime;
+            elapsed +=
+                Time.deltaTime;
 
 
 
@@ -434,7 +548,9 @@ public class PaperScatter : MonoBehaviour
             // 防止碰撞以后突然喷出去
             // ==========================================
 
-            LimitVelocity(rb);
+            LimitVelocity(
+                rb
+            );
 
 
             yield return null;
@@ -443,16 +559,23 @@ public class PaperScatter : MonoBehaviour
 
 
         // ==========================================
-        // 第二阶段：开始慢慢下落
+        // 第二阶段：
+        // 开始慢慢下落
         // ==========================================
 
-        while (rb != null)
+        while (
+            rb != null
+        )
         {
-            elapsed += Time.deltaTime;
+            elapsed +=
+                Time.deltaTime;
 
 
 
+            // ==========================================
             // 使用弱重力
+            // ==========================================
+
             rb.AddForce(
                 Physics.gravity
                 * gravityMultiplier,
@@ -461,7 +584,10 @@ public class PaperScatter : MonoBehaviour
 
 
 
+            // ==========================================
             // 下落时仍然保持一点左右飘动
+            // ==========================================
+
             float wave =
                 Mathf.Sin(
                     elapsed
@@ -480,8 +606,13 @@ public class PaperScatter : MonoBehaviour
 
 
 
+            // ==========================================
             // 持续限制速度
-            LimitVelocity(rb);
+            // ==========================================
+
+            LimitVelocity(
+                rb
+            );
 
 
             yield return null;
@@ -494,7 +625,9 @@ public class PaperScatter : MonoBehaviour
     // 限制纸张速度
     // ==========================================================
 
-    private void LimitVelocity(Rigidbody rb)
+    private void LimitVelocity(
+        Rigidbody rb
+    )
     {
         if (rb == null)
             return;
@@ -502,6 +635,7 @@ public class PaperScatter : MonoBehaviour
 
         Vector3 velocity =
             rb.velocity;
+
 
 
         // ==========================================
@@ -516,7 +650,10 @@ public class PaperScatter : MonoBehaviour
             );
 
 
-        if (horizontalVelocity.magnitude > maxHorizontalVelocity)
+        if (
+            horizontalVelocity.magnitude
+            > maxHorizontalVelocity
+        )
         {
             horizontalVelocity =
                 horizontalVelocity.normalized
@@ -525,6 +662,7 @@ public class PaperScatter : MonoBehaviour
 
             velocity.x =
                 horizontalVelocity.x;
+
 
             velocity.z =
                 horizontalVelocity.z;
@@ -536,7 +674,10 @@ public class PaperScatter : MonoBehaviour
         // 限制向上速度
         // ==========================================
 
-        if (velocity.y > maxUpwardVelocity)
+        if (
+            velocity.y
+            > maxUpwardVelocity
+        )
         {
             velocity.y =
                 maxUpwardVelocity;
@@ -548,7 +689,10 @@ public class PaperScatter : MonoBehaviour
         // 限制整体速度
         // ==========================================
 
-        if (velocity.magnitude > maxTotalVelocity)
+        if (
+            velocity.magnitude
+            > maxTotalVelocity
+        )
         {
             velocity =
                 velocity.normalized
@@ -566,20 +710,27 @@ public class PaperScatter : MonoBehaviour
     // 临时忽略 / 恢复纸与纸之间碰撞
     // ==========================================================
 
-    private void IgnorePaperCollisions(bool ignore)
+    private void IgnorePaperCollisions(
+        bool ignore
+    )
     {
         if (papers == null)
             return;
 
 
-        for (int i = 0; i < papers.Length; i++)
+        for (
+            int i = 0;
+            i < papers.Length;
+            i++
+        )
         {
             if (papers[i] == null)
                 continue;
 
 
             Collider colliderA =
-                papers[i].GetComponent<Collider>();
+                papers[i]
+                    .GetComponent<Collider>();
 
 
             if (colliderA == null)
@@ -598,7 +749,8 @@ public class PaperScatter : MonoBehaviour
 
 
                 Collider colliderB =
-                    papers[j].GetComponent<Collider>();
+                    papers[j]
+                        .GetComponent<Collider>();
 
 
                 if (colliderB == null)
@@ -628,7 +780,9 @@ public class PaperScatter : MonoBehaviour
         );
 
 
-        IgnorePaperCollisions(false);
+        IgnorePaperCollisions(
+            false
+        );
 
 
         Debug.Log(
