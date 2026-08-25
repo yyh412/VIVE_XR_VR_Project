@@ -16,6 +16,9 @@ public class DriverHelpTrigger : MonoBehaviour
     [Header("推车交互")]
     public CarPushInteraction carPushInteraction;
 
+    [Header("字幕气泡")]
+    public DriverSpeechBubble speechBubble;
+
     [Header("转身设置")]
     public float turnDuration = 0.6f;
 
@@ -24,7 +27,6 @@ public class DriverHelpTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // 只有第一阶段才能触发
         if (carHelpManager == null)
             return;
 
@@ -37,7 +39,8 @@ public class DriverHelpTrigger : MonoBehaviour
         Debug.Log("正确进入 HelpTrigger: " + other.name);
 
         carHelpManager.SetStage(
-            CarHelpManager.CarHelpStage.Talking);
+            CarHelpManager.CarHelpStage.Talking
+        );
 
         StartCoroutine(TurnAndTalk());
     }
@@ -50,10 +53,7 @@ public class DriverHelpTrigger : MonoBehaviour
             yield break;
         }
 
-        // =========================
         // 1. Driver 转向玩家
-        // =========================
-
         Vector3 direction =
             playerTransform.position -
             driverTransform.position;
@@ -93,38 +93,37 @@ public class DriverHelpTrigger : MonoBehaviour
                 targetRotation;
         }
 
-        // =========================
-        // 2. Talking
-        // =========================
+        // 2. 显示求助字幕
+        if (speechBubble != null)
+        {
+            speechBubble.ShowHelpMessage();
+        }
 
+        // 3. Talking 动画
         if (driverAnimator != null)
         {
             driverAnimator.SetTrigger("Talk");
         }
 
-        // =========================
-        // 3. 等 3.93 秒
-        // =========================
-
+        // 4. 等 Talking 播放完成
         yield return new WaitForSeconds(
             talkingDuration
         );
 
-        // =========================
-        // 4. 蓝色 HandPrint 出现
-        // =========================
-
+        // 5. Talking 结束后，蓝色手印出现
+        // 注意：这里不关闭求助字幕
         if (carPushInteraction != null)
         {
             carPushInteraction.ShowHandPrint();
         }
 
-        // =========================
-        // 5. 解锁 DriverPushPoint
-        // =========================
-
+        // 6. 解锁 DriverPushPoint
         carHelpManager.SetStage(
             CarHelpManager.CarHelpStage.WaitingForPushPoint
+        );
+
+        Debug.Log(
+            "Talking结束 → 蓝色HandPrint出现，求助字幕继续显示"
         );
     }
 }

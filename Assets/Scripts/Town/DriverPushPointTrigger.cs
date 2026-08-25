@@ -13,10 +13,15 @@ public class DriverPushPointTrigger : MonoBehaviour
     [Header("推车交互")]
     public CarPushInteraction carPushInteraction;
 
+    [Header("字幕气泡")]
+    public DriverSpeechBubble speechBubble;
+
     [Header("转向设置")]
     public float turnDuration = 0.5f;
 
     private Quaternion originalPushRotation;
+
+    private bool hasStarted = false;
 
     private void Start()
     {
@@ -27,26 +32,25 @@ public class DriverPushPointTrigger : MonoBehaviour
         }
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnTriggerStay(Collider other)
     {
+        if (hasStarted)
+            return;
+
         if (carHelpManager == null)
             return;
 
-        // 只有 Driver 已经说完话以后
-        // 这个点才有效
+        // 必须等 Driver 已经说完话
         if (!carHelpManager.IsStage(
             CarHelpManager.CarHelpStage.WaitingForPushPoint))
         {
-            Debug.Log(
-                "现在还不能触发 DriverPushPoint"
-            );
-
             return;
         }
 
+        hasStarted = true;
+
         Debug.Log(
-            "正确进入 DriverPushPoint: " +
-            other.name
+            "玩家到达 DriverPushPoint"
         );
 
         carHelpManager.SetStage(
@@ -58,7 +62,18 @@ public class DriverPushPointTrigger : MonoBehaviour
 
     private IEnumerator TurnBackAndPush()
     {
-        // Driver 转回原来的推车方向
+        // 1. 玩家已经到推车位置
+        //    第一段求助字幕现在才消失
+        if (speechBubble != null)
+        {
+            speechBubble.HideBubble();
+
+            Debug.Log(
+                "到达 DriverPushPoint → 求助字幕消失"
+            );
+        }
+
+        // 2. Driver 转回原来的推车方向
         if (driverTransform != null)
         {
             Quaternion startRotation =
@@ -89,16 +104,24 @@ public class DriverPushPointTrigger : MonoBehaviour
                 originalPushRotation;
         }
 
-        // 开始 Push
+        // 3. Driver 开始 Push
         if (driverAnimator != null)
         {
             driverAnimator.SetTrigger("Push");
+
+            Debug.Log(
+                "Driver 转回车的方向 → Push_InPlace"
+            );
         }
 
-        // 开启手部检测
+        // 4. 开启手部检测
         if (carPushInteraction != null)
         {
             carPushInteraction.EnablePushInteraction();
+
+            Debug.Log(
+                "开启手部推车检测"
+            );
         }
     }
 }
