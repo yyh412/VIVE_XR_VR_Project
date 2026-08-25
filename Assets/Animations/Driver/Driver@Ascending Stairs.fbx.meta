@@ -1,54 +1,9 @@
 fileFormatVersion: 2
-guid: edcc2ffef360fbc4498caf90ccf6a811
+guid: 88f8a863631bfa147b6fc61ef4ac0a3a
 ModelImporter:
   serializedVersion: 21300
   internalIDToNameTable: []
-  externalObjects:
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Wolf3D_Body.003
-    second: {fileID: 2100000, guid: 72e8ae8e22d9c164bbeb6e1a45ba57eb, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Wolf3D_Eye.003
-    second: {fileID: 2100000, guid: 84367f5eed83d8a47bcbe82ff6f17552, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Wolf3D_Glasses.003
-    second: {fileID: 2100000, guid: acb0d9ce19e919847a56855e13ea4fd0, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Wolf3D_Hair.003
-    second: {fileID: 2100000, guid: d0979cdfcfe8cb64e80d81de27ea812a, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Wolf3D_Outfit_Bottom.003
-    second: {fileID: 2100000, guid: df82d1a7438e38a408cbd378c9144fad, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Wolf3D_Outfit_Footwear.003
-    second: {fileID: 2100000, guid: 721b90e8b05788e4aab8443e2708a891, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Wolf3D_Outfit_Top.003
-    second: {fileID: 2100000, guid: 174ee638be8890f4b9d3d7f6c6bea5b1, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Wolf3D_Skin.003
-    second: {fileID: 2100000, guid: cdd0f034163ed5047829b6a8a7fc4f46, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Wolf3D_Teeth.003
-    second: {fileID: 2100000, guid: 453b685a9f3063e4495607c96d0c82ce, type: 2}
+  externalObjects: {}
   materials:
     materialImportMode: 2
     materialName: 0
