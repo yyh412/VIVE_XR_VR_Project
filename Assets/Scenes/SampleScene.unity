@@ -156493,6 +156493,26 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 894732816}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1067335013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1067335006}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae267f906a1259f49b38b905e63628a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  driverAnimator: {fileID: 1067335011}
+  driverAgent: {fileID: 1067335010}
+  carTransform: {fileID: 523282996}
+  carWheelSpin: {fileID: 523282995}
+  pushStopStateName: Push Stop
+  navMeshSearchDistance: 1
+  driverHeightOffset: 0.2
+  carHeightOffset: -0.06
 --- !u!1 &1067359056 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1036266860672346778, guid: 1dd9343db6413d345a8893377c7d10cd,
@@ -176270,6 +176290,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2877189789151093642, guid: 1101b5b8114b6e34cace1e63fed978e5,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.70981705
+      objectReference: {fileID: 0}
+    - target: {fileID: 2877189789151093642, guid: 1101b5b8114b6e34cace1e63fed978e5,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.205
+      objectReference: {fileID: 0}
+    - target: {fileID: 2877189789151093642, guid: 1101b5b8114b6e34cace1e63fed978e5,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.0000031758
       objectReference: {fileID: 0}
     - target: {fileID: 4020991649138733620, guid: 1101b5b8114b6e34cace1e63fed978e5,
         type: 3}
@@ -264268,11 +264303,6 @@ MonoBehaviour:
   hapticStrength: 0.35
   hapticPulseDuration: 0.08
   hapticInterval: 0.06
-  carTransform: {fileID: 523282996}
-  carWheelSpin: {fileID: 523282995}
-  carMoveDistance: 2
-  carMoveDuration: 2
-  carMoveDirection: {x: 1, y: 0, z: 0}
 --- !u!1 &1755692700 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -7233091821795234333, guid: 1dd9343db6413d345a8893377c7d10cd,

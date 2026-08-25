@@ -33,7 +33,7 @@ public class CarPushInteraction : MonoBehaviour
     [Header("第一阶段：多久后说 Keep pushing")]
     public float encourageDelay = 2.0f;
 
-    [Header("第二阶段：再继续推多久")]
+    [Header("第二阶段：Keep pushing 后继续推多久")]
     public float struggleDuration = 3.0f;
 
     [Header("持续震动设置")]
@@ -42,19 +42,6 @@ public class CarPushInteraction : MonoBehaviour
 
     public float hapticPulseDuration = 0.08f;
     public float hapticInterval = 0.06f;
-
-    [Header("汽车")]
-    public Transform carTransform;
-
-    [Header("车轮控制")]
-    public CarWheelSpin carWheelSpin;
-
-    [Header("汽车移动设置")]
-    public float carMoveDistance = 2.5f;
-    public float carMoveDuration = 2.0f;
-
-    [Header("汽车移动方向")]
-    public Vector3 carMoveDirection = Vector3.forward;
 
     private bool interactionEnabled = false;
     private bool handIsOnTarget = false;
@@ -67,12 +54,6 @@ public class CarPushInteraction : MonoBehaviour
 
     private Renderer[] handPrintRenderers;
 
-    private bool carIsMoving = false;
-    private float carMoveTimer = 0f;
-
-    private Vector3 carMoveStartPosition;
-    private Vector3 carMoveTargetPosition;
-
     private void Start()
     {
         if (handPrint != null)
@@ -80,13 +61,8 @@ public class CarPushInteraction : MonoBehaviour
             handPrintRenderers =
                 handPrint.GetComponentsInChildren<Renderer>(true);
 
+            // 游戏开始隐藏手印
             handPrint.SetActive(false);
-        }
-
-        // 游戏开始保持陷泥潭状态
-        if (carWheelSpin != null)
-        {
-            carWheelSpin.SetStuck();
         }
 
         ResetInternalState();
@@ -94,21 +70,14 @@ public class CarPushInteraction : MonoBehaviour
 
     private void Update()
     {
-        // =====================================
-        // 汽车成功后正在向前移动
-        // =====================================
-        if (carIsMoving)
-        {
-            UpdateCarMovement();
-            return;
-        }
-
+        // 还没到 DriverPushPoint
         if (!interactionEnabled)
             return;
 
         if (carHelpManager == null)
             return;
 
+        // 只有 ReadyToPush / Pushing 阶段才能推
         if (!carHelpManager.IsStage(
                 CarHelpManager.CarHelpStage.ReadyToPush) &&
             !carHelpManager.IsStage(
@@ -123,11 +92,12 @@ public class CarPushInteraction : MonoBehaviour
         bool anyHandNear =
             leftNear || rightNear;
 
-        // =========================
-        // 手正在推车
-        // =========================
+        // ==================================================
+        // 玩家正在推
+        // ==================================================
         if (anyHandNear)
         {
+            // 第一次把手放上去
             if (!handIsOnTarget)
             {
                 handIsOnTarget = true;
@@ -142,25 +112,24 @@ public class CarPushInteraction : MonoBehaviour
                     CarHelpManager.CarHelpStage.Pushing
                 );
 
-                SetHandPrintMaterial(
-                    redMaterial
-                );
+                // 蓝色手印 → 红色
+                SetHandPrintMaterial(redMaterial);
 
-                Debug.Log(
-                    "开始推车，手印变红"
-                );
+                Debug.Log("开始推车，手印变红");
             }
 
+            // 持续震动
             UpdateHaptics(
                 leftNear,
                 rightNear
             );
 
+            // 推车计时
             pushTimer += Time.deltaTime;
 
-            // =====================
-            // 推满 2 秒
-            // =====================
+            // ==================================================
+            // 第一阶段：持续推2秒
+            // ==================================================
             if (pushTimer >= encourageDelay &&
                 !encourageTriggered)
             {
@@ -169,15 +138,14 @@ public class CarPushInteraction : MonoBehaviour
                 DriverEncourage();
             }
 
-            // =====================
-            // 再推 3 秒
-            // =====================
+            // ==================================================
+            // 第二阶段：再持续推3秒
+            // ==================================================
             float totalRequiredTime =
                 encourageDelay +
                 struggleDuration;
 
-            if (pushTimer >=
-                    totalRequiredTime &&
+            if (pushTimer >= totalRequiredTime &&
                 !pushFinished)
             {
                 pushFinished = true;
@@ -185,6 +153,10 @@ public class CarPushInteraction : MonoBehaviour
                 PushSucceeded();
             }
         }
+
+        // ==================================================
+        // 手移开
+        // ==================================================
         else
         {
             if (handIsOnTarget &&
@@ -195,25 +167,89 @@ public class CarPushInteraction : MonoBehaviour
         }
     }
 
+    // ======================================================
+    // 2秒后：Keep pushing!
+    // ======================================================
     private void DriverEncourage()
     {
-        Debug.Log(
-            "Driver: Keep pushing!"
-        );
+        Debug.Log("Driver: Keep pushing!");
 
         if (speechBubble != null)
         {
-            speechBubble
-                .ShowEncourageMessage();
+            speechBubble.ShowEncourageMessage();
         }
     }
 
+    // ======================================================
+    // 2秒 + 3秒完成
+    // ======================================================
+    private void PushSucceeded()
+    {
+        Debug.Log(
+            "持续推车成功 → Driver 切换到 Push Stop"
+        );
+
+        // 不再检测玩家手
+        interactionEnabled = false;
+
+        // 隐藏手印
+        if (handPrint != null)
+        {
+            handPrint.SetActive(false);
+        }
+
+        // 如果 Keep pushing 还在显示，可以关掉
+        if (speechBubble != null)
+        {
+            speechBubble.HideBubble();
+        }
+
+        // ==========================================
+        // 最关键：
+        // 从 Push_InPlace 切到 Push Stop
+        // ==========================================
+        if (driverAnimator != null)
+        {
+            driverAnimator.SetTrigger("StopPush");
+
+            Debug.Log(
+                "StopPush Trigger 已发送"
+            );
+        }
+        else
+        {
+            Debug.LogWarning(
+                "Driver Animator 没有设置！"
+            );
+        }
+
+        // 这里不要控制汽车
+        // 也不要在这里 SetDriving()
+        //
+        // PushStopCarSync 会在检测到
+        // Push Stop 真正开始播放时：
+        //
+        // 1. 四轮 SetDriving()
+        // 2. Driver 按 Root Motion 前进
+        // 3. car 同步同样位移
+        // 4. Push Stop 结束后 StopWheels()
+
+        if (carHelpManager != null)
+        {
+            carHelpManager.SetStage(
+                CarHelpManager.CarHelpStage.Finished
+            );
+        }
+    }
+
+    // ======================================================
+    // 持续震动
+    // ======================================================
     private void UpdateHaptics(
         bool leftNear,
         bool rightNear)
     {
-        hapticTimer -=
-            Time.deltaTime;
+        hapticTimer -= Time.deltaTime;
 
         if (hapticTimer > 0f)
             return;
@@ -240,116 +276,9 @@ public class CarPushInteraction : MonoBehaviour
             hapticInterval;
     }
 
-    private void PushSucceeded()
-    {
-        Debug.Log(
-            "持续推车成功：四个轮子开始转，汽车向前移动"
-        );
-
-        interactionEnabled = false;
-
-        // 成功后隐藏手印
-        if (handPrint != null)
-        {
-            handPrint.SetActive(false);
-        }
-
-        // =====================================
-        // 四个车轮切换到 Driving
-        // =====================================
-        if (carWheelSpin != null)
-        {
-            carWheelSpin.SetDriving();
-        }
-
-        // =====================================
-        // 开始移动汽车
-        // =====================================
-        if (carTransform != null)
-        {
-            carMoveStartPosition =
-                carTransform.position;
-
-            carMoveTargetPosition =
-                carMoveStartPosition +
-                carMoveDirection.normalized *
-                carMoveDistance;
-
-            carMoveTimer = 0f;
-            carIsMoving = true;
-        }
-        else
-        {
-            Debug.LogWarning(
-                "Car Transform 没有设置！"
-            );
-        }
-
-        if (carHelpManager != null)
-        {
-            carHelpManager.SetStage(
-                CarHelpManager.CarHelpStage.Finished
-            );
-        }
-    }
-
-    private void UpdateCarMovement()
-    {
-        if (carTransform == null)
-        {
-            carIsMoving = false;
-            return;
-        }
-
-        carMoveTimer += Time.deltaTime;
-
-        float t =
-            Mathf.Clamp01(
-                carMoveTimer /
-                carMoveDuration
-            );
-
-        // 平滑启动、平滑停止
-        float smoothT =
-            t * t * (3f - 2f * t);
-
-        carTransform.position =
-            Vector3.Lerp(
-                carMoveStartPosition,
-                carMoveTargetPosition,
-                smoothT
-            );
-
-        // =====================================
-        // 移动完成
-        // =====================================
-        if (t >= 1f)
-        {
-            carTransform.position =
-                carMoveTargetPosition;
-
-            carIsMoving = false;
-
-            Debug.Log(
-                "汽车移动完成，四个车轮停止"
-            );
-
-            // 四个轮子停止
-            if (carWheelSpin != null)
-            {
-                carWheelSpin.StopWheels();
-            }
-
-            // Driver 切到 Push Stop
-            if (driverAnimator != null)
-            {
-                driverAnimator.SetTrigger(
-                    "StopPush"
-                );
-            }
-        }
-    }
-
+    // ======================================================
+    // 检测控制器位置
+    // ======================================================
     private bool IsHandNear(
         Transform hand)
     {
@@ -366,6 +295,9 @@ public class CarPushInteraction : MonoBehaviour
                handDetectDistance;
     }
 
+    // ======================================================
+    // 中途松手
+    // ======================================================
     private void ResetPush()
     {
         handIsOnTarget = false;
@@ -376,28 +308,26 @@ public class CarPushInteraction : MonoBehaviour
         encourageTriggered = false;
         pushFinished = false;
 
+        // 红色恢复蓝色
         SetHandPrintMaterial(
             blueMaterial
         );
 
-        // 如果 Keep pushing 已经出现，
-        // 松手就立即隐藏
+        // Keep pushing 如果已经出现，
+        // 松手立即隐藏
         if (speechBubble != null)
         {
             speechBubble.HideBubble();
         }
 
-        // 中途松手时汽车仍然保持 Stuck 状态
-        if (carWheelSpin != null)
-        {
-            carWheelSpin.SetStuck();
-        }
-
         Debug.Log(
-            "手移开 → 恢复蓝色 → 重新从2秒开始"
+            "手移开 → 恢复蓝色 → 重新从前2秒开始"
         );
     }
 
+    // ======================================================
+    // Driver Talking 结束后调用
+    // ======================================================
     public void ShowHandPrint()
     {
         if (handPrint == null)
@@ -414,6 +344,9 @@ public class CarPushInteraction : MonoBehaviour
         );
     }
 
+    // ======================================================
+    // 玩家到 DriverPushPoint 后调用
+    // ======================================================
     public void EnablePushInteraction()
     {
         interactionEnabled = true;
@@ -438,10 +371,11 @@ public class CarPushInteraction : MonoBehaviour
 
         pushTimer = 0f;
         hapticTimer = 0f;
-
-        carIsMoving = false;
     }
 
+    // ======================================================
+    // 蓝 / 红手印材质切换
+    // ======================================================
     private void SetHandPrintMaterial(
         Material material)
     {
