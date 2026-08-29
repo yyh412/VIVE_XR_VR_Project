@@ -3550,7 +3550,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 55
+  m_RootOrder: 51
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &19448483
 GameObject:
@@ -26174,7 +26174,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 175827702}
   m_LocalRotation: {x: -0.021692945, y: -0.706774, z: -0.021692945, w: 0.706774}
-  m_LocalPosition: {x: -0.027, y: 0.034, z: 0.021666422}
+  m_LocalPosition: {x: -0.057, y: 0.036, z: 0.022}
   m_LocalScale: {x: 0.09368355, y: 0.093683556, z: 0.09368355}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -61009,14 +61009,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 410818004}
-  m_LocalRotation: {x: -0.29878923, y: 0.67822784, z: -0.56912553, w: 0.35612932}
-  m_LocalPosition: {x: -48.4, y: 7.93, z: -20.21}
-  m_LocalScale: {x: 0.10006696, y: 0.10006696, z: 0.10006696}
+  m_LocalRotation: {x: -0.4579811, y: 0.53166145, z: 0.45115733, w: -0.5514041}
+  m_LocalPosition: {x: -0.161, y: 0.7135, z: 0.1576}
+  m_LocalScale: {x: 0.055592753, y: 0.055592757, z: 0.055592746}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 52
-  m_LocalEulerAnglesHint: {x: 33.999, y: 96.826, z: -77.91}
+  m_Father: {fileID: 523282996}
+  m_RootOrder: 93
+  m_LocalEulerAnglesHint: {x: 1.452, y: 270.87, z: -80.01}
 --- !u!1 &410915268 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -8282615386236835586, guid: 1dd9343db6413d345a8893377c7d10cd,
@@ -64876,14 +64876,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 433193373}
-  m_LocalRotation: {x: -0.11318445, y: 0.69798946, z: 0.113184504, w: 0.69798946}
-  m_LocalPosition: {x: -48.04, y: 7.261, z: -20.13}
-  m_LocalScale: {x: 0.10006696, y: 0.10006696, z: 0.10006696}
+  m_LocalRotation: {x: -0.3334911, y: -0.62352526, z: -0.3334911, w: 0.62352526}
+  m_LocalPosition: {x: -0.26, y: 0.323, z: 0.121}
+  m_LocalScale: {x: 0.055592757, y: 0.055592757, z: 0.055592757}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 54
-  m_LocalEulerAnglesHint: {x: -18.422, y: 90, z: 0}
+  m_Father: {fileID: 523282996}
+  m_RootOrder: 91
+  m_LocalEulerAnglesHint: {x: -56.28, y: -90, z: 0}
 --- !u!1 &433239817 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 316301832966721572, guid: 1dd9343db6413d345a8893377c7d10cd,
@@ -157347,7 +157347,7 @@ Transform:
   - {fileID: 740905223}
   - {fileID: 1312911859}
   m_Father: {fileID: 0}
-  m_RootOrder: 57
+  m_RootOrder: 53
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1065035853 stripped
 GameObject:
@@ -157885,7 +157885,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   animator: {fileID: 1067335011}
-  enteringCarStateName: Entering Car
   drivingStateName: Driving
   leftHandTarget: {fileID: 1678840342}
   rightHandTarget: {fileID: 410818008}
@@ -157912,7 +157911,7 @@ MonoBehaviour:
   rightHandTarget: {fileID: 1407955323}
   positionWeight: 1
   rotationWeight: 0
-  enableIKOnStart: 1
+  enableIKOnStart: 0
 --- !u!1 &1067359056 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1036266860672346778, guid: 1dd9343db6413d345a8893377c7d10cd,
@@ -208096,7 +208095,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 56
+  m_RootOrder: 52
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1419351233 stripped
 GameObject:
@@ -221406,6 +221405,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -373580670517856883, guid: 1dd9343db6413d345a8893377c7d10cd,
         type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: -373580670517856883, guid: 1dd9343db6413d345a8893377c7d10cd,
+        type: 3}
       propertyPath: m_StaticEditorFlags
       value: 8
       objectReference: {fileID: 0}
@@ -222386,6 +222390,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1660312605598790122, guid: 1dd9343db6413d345a8893377c7d10cd,
+        type: 3}
+      propertyPath: m_Layer
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 1660312605598790122, guid: 1dd9343db6413d345a8893377c7d10cd,
         type: 3}
@@ -254854,14 +254863,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1678840338}
-  m_LocalRotation: {x: 0.6280073, y: 0.32497212, z: 0.32497212, w: 0.6280073}
-  m_LocalPosition: {x: -48.43, y: 7.899, z: -19.66}
-  m_LocalScale: {x: 0.10006696, y: 0.10006696, z: 0.10006696}
+  m_LocalRotation: {x: -0.5567023, y: -0.64328516, z: 0.32761067, w: 0.4110206}
+  m_LocalPosition: {x: -0.125, y: 0.6874, z: -0.147}
+  m_LocalScale: {x: 0.05559274, y: 0.055592753, z: 0.05559275}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 51
-  m_LocalEulerAnglesHint: {x: 35.28, y: 90, z: 90}
+  m_Father: {fileID: 523282996}
+  m_RootOrder: 92
+  m_LocalEulerAnglesHint: {x: -2.071, y: -116.6, z: 80.467}
 --- !u!1 &1678845041 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7184955450713577187, guid: 1dd9343db6413d345a8893377c7d10cd,
@@ -282637,6 +282646,7 @@ MonoBehaviour:
   passengerController: {fileID: 1352153243}
   driverAnimator: {fileID: 1067335011}
   drivingStateName: Driving
+  carAnimator: {fileID: 523282994}
   routePoints:
   - {fileID: 886926650}
   - {fileID: 1385871118}
@@ -282648,12 +282658,22 @@ MonoBehaviour:
   turnSpeed: 3
   waypointReachDistance: 0.35
   carRotationOffset: 90
-  navMeshSearchDistance: 2
-  carHeightOffset: 0.05
-  useNavMeshHeight: 1
+  wheelLB: {fileID: 1564344062}
+  wheelLF: {fileID: 189110026}
+  wheelRB: {fileID: 811983896}
+  wheelRF: {fileID: 2049310608}
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 256
+  wheelRayStartHeight: 1
+  wheelRayDistance: 3
+  frontWheelRadius: 0.25
+  rearWheelRadius: 0.4
+  groundPositionSpeed: 12
+  groundRotationSpeed: 10
   slowDownDistance: 2
   minimumDriveSpeed: 0.3
-  carWheelSpin: {fileID: 0}
+  carWheelSpin: {fileID: 523282995}
   showDebugLog: 1
 --- !u!4 &1867937902
 Transform:
@@ -282668,7 +282688,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 58
+  m_RootOrder: 54
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1868218156 stripped
 GameObject:
@@ -291419,14 +291439,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1936151672}
-  m_LocalRotation: {x: -0.09437564, y: 0.70078045, z: 0.09437564, w: 0.70078045}
-  m_LocalPosition: {x: -47.93, y: 7.175, z: -19.743}
-  m_LocalScale: {x: 0.10006696, y: 0.10006696, z: 0.10006696}
+  m_LocalRotation: {x: -0.29429883, y: -0.64295274, z: -0.29429883, w: 0.64295274}
+  m_LocalPosition: {x: -0.377, y: 0.303, z: -0.098333366}
+  m_LocalScale: {x: 0.055592757, y: 0.055592753, z: 0.055592757}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 53
-  m_LocalEulerAnglesHint: {x: -15.34, y: 90, z: 0}
+  m_Father: {fileID: 523282996}
+  m_RootOrder: 90
+  m_LocalEulerAnglesHint: {x: -49.19, y: -90, z: 0}
 --- !u!1 &1936566064 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2755925214669706051, guid: 1dd9343db6413d345a8893377c7d10cd,

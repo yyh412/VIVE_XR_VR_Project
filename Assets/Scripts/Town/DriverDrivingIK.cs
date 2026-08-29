@@ -5,9 +5,6 @@ public class DriverDrivingIK : MonoBehaviour
     [Header("Animator")]
     public Animator animator;
 
-    [Header("Entering Car 状态名")]
-    public string enteringCarStateName = "Entering Car";
-
     [Header("Driving 状态名")]
     public string drivingStateName = "Driving";
 
@@ -24,7 +21,7 @@ public class DriverDrivingIK : MonoBehaviour
     public float handPositionWeight = 1f;
 
     [Range(0f, 1f)]
-    public float handRotationWeight = 0f;
+    public float handRotationWeight = 1f;
 
     [Header("Driving 脚 IK")]
     [Range(0f, 1f)]
@@ -39,59 +36,33 @@ public class DriverDrivingIK : MonoBehaviour
         if (animator == null)
             return;
 
-
         AnimatorStateInfo stateInfo =
             animator.GetCurrentAnimatorStateInfo(0);
 
-
-        bool isEnteringCar =
-            stateInfo.IsName(
-                enteringCarStateName
-            );
-
-
         bool isDriving =
-            stateInfo.IsName(
-                drivingStateName
-            );
+            stateInfo.IsName(drivingStateName);
 
 
         // ==================================================
-        // Entering Car
-        // 只控制双手
-        // 双脚完全使用原动画
-        // ==================================================
-
-        if (isEnteringCar)
-        {
-            ApplyHandIK();
-
-            ResetFootIK();
-
-            return;
-        }
-
-
-        // ==================================================
-        // Driving
-        // 双手 + 双脚全部控制
+        // 只有 Driving 才启用驾驶 IK
         // ==================================================
 
         if (isDriving)
         {
             ApplyHandIK();
-
             ApplyFootIK();
-
             return;
         }
 
 
         // ==================================================
-        // 其他状态全部关闭
+        // Entering Car / Walking / Push / 其他状态
+        //
+        // 完全不碰 IK
+        // 手脚全部使用动画自己的动作
         // ==================================================
 
-        ResetAllIK();
+        return;
     }
 
 
@@ -127,18 +98,6 @@ public class DriverDrivingIK : MonoBehaviour
                 );
             }
         }
-        else
-        {
-            animator.SetIKPositionWeight(
-                AvatarIKGoal.LeftHand,
-                0f
-            );
-
-            animator.SetIKRotationWeight(
-                AvatarIKGoal.LeftHand,
-                0f
-            );
-        }
 
 
         // 右手
@@ -167,24 +126,11 @@ public class DriverDrivingIK : MonoBehaviour
                 );
             }
         }
-        else
-        {
-            animator.SetIKPositionWeight(
-                AvatarIKGoal.RightHand,
-                0f
-            );
-
-            animator.SetIKRotationWeight(
-                AvatarIKGoal.RightHand,
-                0f
-            );
-        }
     }
 
 
     // ======================================================
     // 双脚 IK
-    // 只在 Driving 使用
     // ======================================================
 
     private void ApplyFootIK()
@@ -215,18 +161,6 @@ public class DriverDrivingIK : MonoBehaviour
                 );
             }
         }
-        else
-        {
-            animator.SetIKPositionWeight(
-                AvatarIKGoal.LeftFoot,
-                0f
-            );
-
-            animator.SetIKRotationWeight(
-                AvatarIKGoal.LeftFoot,
-                0f
-            );
-        }
 
 
         // 右脚
@@ -255,76 +189,5 @@ public class DriverDrivingIK : MonoBehaviour
                 );
             }
         }
-        else
-        {
-            animator.SetIKPositionWeight(
-                AvatarIKGoal.RightFoot,
-                0f
-            );
-
-            animator.SetIKRotationWeight(
-                AvatarIKGoal.RightFoot,
-                0f
-            );
-        }
-    }
-
-
-    // ======================================================
-    // 关闭脚 IK
-    // ======================================================
-
-    private void ResetFootIK()
-    {
-        animator.SetIKPositionWeight(
-            AvatarIKGoal.LeftFoot,
-            0f
-        );
-
-        animator.SetIKRotationWeight(
-            AvatarIKGoal.LeftFoot,
-            0f
-        );
-
-        animator.SetIKPositionWeight(
-            AvatarIKGoal.RightFoot,
-            0f
-        );
-
-        animator.SetIKRotationWeight(
-            AvatarIKGoal.RightFoot,
-            0f
-        );
-    }
-
-
-    // ======================================================
-    // 全部关闭
-    // ======================================================
-
-    private void ResetAllIK()
-    {
-        animator.SetIKPositionWeight(
-            AvatarIKGoal.LeftHand,
-            0f
-        );
-
-        animator.SetIKRotationWeight(
-            AvatarIKGoal.LeftHand,
-            0f
-        );
-
-        animator.SetIKPositionWeight(
-            AvatarIKGoal.RightHand,
-            0f
-        );
-
-        animator.SetIKRotationWeight(
-            AvatarIKGoal.RightHand,
-            0f
-        );
-
-
-        ResetFootIK();
     }
 }

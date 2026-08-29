@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.AI;
 
 public class CarDrivePassenger : MonoBehaviour
 {
@@ -39,16 +38,25 @@ public class CarDrivePassenger : MonoBehaviour
     [Header("Driver")]
     public Animator driverAnimator;
 
-    [Tooltip("Driver 的驾驶动画状态名字")]
+    [Tooltip("Driver 驾驶动画状态名")]
     public string drivingStateName = "Driving";
 
 
     // ======================================================
-    // Waypoint 路线
+    // 汽车自己的 Animator
+    // ======================================================
+
+    [Header("汽车 Animator")]
+    [Tooltip("汽车自己的动画一直播放")]
+    public Animator carAnimator;
+
+
+    // ======================================================
+    // Waypoint
     // ======================================================
 
     [Header("汽车路线")]
-    [Tooltip("按顺序拖 RoutePoint_01、02、03...")]
+    [Tooltip("RoutePoint_01、02、03...依次拖进来")]
     public Transform[] routePoints;
 
 
@@ -56,59 +64,104 @@ public class CarDrivePassenger : MonoBehaviour
     // 行驶参数
     // ======================================================
 
-    [Header("汽车速度")]
-    public float driveSpeed = 2.0f;
+    [Header("汽车行驶")]
 
-    [Tooltip("汽车转向速度")]
-    public float turnSpeed = 3.0f;
+    public float driveSpeed = 2f;
 
-    [Tooltip("距离路线点多近时进入下一个点")]
-    public float waypointReachDistance = 0.4f;
+    [Tooltip("水平转向速度")]
+    public float turnSpeed = 3f;
+
+    [Tooltip("距离路线点多近进入下一个点")]
+    public float waypointReachDistance = 0.35f;
 
 
     // ======================================================
-    // 车头方向修正
+    // 模型朝向修正
     // ======================================================
 
     [Header("车头方向修正")]
-    [Tooltip("如果汽车模型车头不是 Unity +Z，就在这里修正。常用：0 / 90 / -90 / 180")]
-    public float carRotationOffset = 0f;
+
+    [Tooltip("你现在已经调正确的是90，就保持90")]
+    public float carRotationOffset = 90f;
 
 
     // ======================================================
-    // NavMesh 贴地
+    // 四个车轮
     // ======================================================
 
-    [Header("汽车贴地")]
+    [Header("四轮贴地检测")]
 
-    [Tooltip("从当前位置附近多大范围寻找 NavMesh")]
-    public float navMeshSearchDistance = 2.0f;
+    [Tooltip("左后轮")]
+    public Transform wheelLB;
 
-    [Tooltip("车体相对于 NavMesh 地面的高度微调")]
-    public float carHeightOffset = -0.06f;
+    [Tooltip("左前轮")]
+    public Transform wheelLF;
 
-    [Tooltip("是否使用 NavMesh 自动修正汽车高度")]
-    public bool useNavMeshHeight = true;
+    [Tooltip("右后轮")]
+    public Transform wheelRB;
+
+    [Tooltip("右前轮")]
+    public Transform wheelRF;
 
 
     // ======================================================
-    // 最后减速
+    // 地面
+    // ======================================================
+
+    [Header("地面检测")]
+
+    [Tooltip("只选择 Ground")]
+    public LayerMask groundLayer;
+
+    [Tooltip("从轮子上方多高开始射线")]
+    public float wheelRayStartHeight = 1f;
+
+    [Tooltip("向下检测距离")]
+    public float wheelRayDistance = 3f;
+
+
+    // ======================================================
+    // 前后轮半径
+    // ======================================================
+
+    [Header("轮胎半径")]
+
+    [Tooltip("前轮半径")]
+    public float frontWheelRadius = 0.25f;
+
+    [Tooltip("后轮半径")]
+    public float rearWheelRadius = 0.35f;
+
+
+    // ======================================================
+    // 贴地速度
+    // ======================================================
+
+    [Header("车辆贴地")]
+
+    [Tooltip("汽车高度跟随地面的速度")]
+    public float groundPositionSpeed = 12f;
+
+    [Tooltip("汽车坡度跟随速度")]
+    public float groundRotationSpeed = 10f;
+
+
+    // ======================================================
+    // 终点
     // ======================================================
 
     [Header("终点减速")]
 
-    [Tooltip("距离最后一个路线点多远开始减速")]
-    public float slowDownDistance = 2.0f;
+    public float slowDownDistance = 2f;
 
-    [Tooltip("减速时最低速度")]
     public float minimumDriveSpeed = 0.3f;
 
 
     // ======================================================
-    // 车轮
+    // 车轮转动
     // ======================================================
 
-    [Header("车轮")]
+    [Header("车轮转动")]
     public CarWheelSpin carWheelSpin;
 
 
@@ -140,7 +193,6 @@ public class CarDrivePassenger : MonoBehaviour
             return;
 
 
-        // 还没有正式启动
         if (!drivingStarted)
         {
             TryStartDriving();
@@ -148,13 +200,12 @@ public class CarDrivePassenger : MonoBehaviour
         }
 
 
-        // 已经启动
         DriveAlongRoute();
     }
 
 
     // ======================================================
-    // 是否满足开车条件
+    // 是否可以开车
     // ======================================================
 
     private void TryStartDriving()
@@ -181,23 +232,22 @@ public class CarDrivePassenger : MonoBehaviour
         }
 
 
-        // 玩家必须已经进入 BoardingZone
+        // 玩家必须上车
         if (!boardingDetector.HasBoarded())
             return;
 
 
-        // 玩家必须已经抬高完成
-        // 正式进入 Passenger Mode
+        // 必须已经进入 PassengerMode
         if (!passengerController.IsPassenger())
             return;
 
 
         // Driver 必须正在 Driving
-        AnimatorStateInfo stateInfo =
+        AnimatorStateInfo state =
             driverAnimator.GetCurrentAnimatorStateInfo(0);
 
 
-        if (!stateInfo.IsName(drivingStateName))
+        if (!state.IsName(drivingStateName))
             return;
 
 
@@ -206,7 +256,7 @@ public class CarDrivePassenger : MonoBehaviour
 
 
     // ======================================================
-    // 开始驾驶
+    // 开始开车
     // ======================================================
 
     private void StartDriving()
@@ -217,31 +267,35 @@ public class CarDrivePassenger : MonoBehaviour
         currentPointIndex = 0;
 
 
+        // 四轮开始转
         if (carWheelSpin != null)
         {
             carWheelSpin.SetDriving();
         }
 
 
+        // 汽车自己的动画继续
+        if (carAnimator != null)
+        {
+            carAnimator.enabled = true;
+        }
+
+
         if (showDebugLog)
         {
             Debug.Log(
-                "玩家已上车 + Driver 已进入 Driving → 汽车开始沿 Waypoint 行驶"
+                "汽车启动 → 四轮Driving → Driver动画继续 → 车辆动画继续"
             );
         }
     }
 
 
     // ======================================================
-    // 沿 Waypoint 路线驾驶
+    // 沿路线驾驶
     // ======================================================
 
     private void DriveAlongRoute()
     {
-        if (carTransform == null)
-            return;
-
-
         if (routePoints == null ||
             routePoints.Length == 0)
         {
@@ -249,21 +303,18 @@ public class CarDrivePassenger : MonoBehaviour
         }
 
 
-        if (currentPointIndex >=
-            routePoints.Length)
+        if (currentPointIndex >= routePoints.Length)
         {
             ArriveAtDestination();
             return;
         }
 
 
-        Transform targetPoint =
+        Transform target =
             routePoints[currentPointIndex];
 
 
-        // 某个 Element 没拖
-        // 自动跳过
-        if (targetPoint == null)
+        if (target == null)
         {
             currentPointIndex++;
             return;
@@ -271,7 +322,7 @@ public class CarDrivePassenger : MonoBehaviour
 
 
         // ==================================================
-        // 保存汽车移动前的位置
+        // 记录汽车这一帧开始的位置
         // ==================================================
 
         Vector3 carBefore =
@@ -279,15 +330,14 @@ public class CarDrivePassenger : MonoBehaviour
 
 
         // ==================================================
-        // 计算当前目标方向
+        // Waypoint方向
         // ==================================================
 
         Vector3 toTarget =
-            targetPoint.position -
+            target.position -
             carTransform.position;
 
 
-        // 行驶方向只看 X/Z
         Vector3 flatDirection =
             new Vector3(
                 toTarget.x,
@@ -301,11 +351,10 @@ public class CarDrivePassenger : MonoBehaviour
 
 
         // ==================================================
-        // 到达当前 Waypoint
+        // 到达当前点
         // ==================================================
 
-        if (distance <=
-            waypointReachDistance)
+        if (distance <= waypointReachDistance)
         {
             currentPointIndex++;
 
@@ -313,14 +362,13 @@ public class CarDrivePassenger : MonoBehaviour
             if (showDebugLog)
             {
                 Debug.Log(
-                    "到达 RoutePoint → 当前路线索引：" +
+                    "到达RoutePoint → " +
                     currentPointIndex
                 );
             }
 
 
-            if (currentPointIndex >=
-                routePoints.Length)
+            if (currentPointIndex >= routePoints.Length)
             {
                 ArriveAtDestination();
             }
@@ -330,73 +378,30 @@ public class CarDrivePassenger : MonoBehaviour
         }
 
 
-        if (flatDirection.sqrMagnitude <
-            0.001f)
-        {
+        if (flatDirection.sqrMagnitude < 0.001f)
             return;
-        }
 
 
         flatDirection.Normalize();
 
 
         // ==================================================
-        // 计算正确的汽车朝向
-        // ==================================================
-
-        Quaternion routeRotation =
-            Quaternion.LookRotation(
-                flatDirection,
-                Vector3.up
-            );
-
-
-        // 模型自身方向修正
-        Quaternion offsetRotation =
-            Quaternion.Euler(
-                0f,
-                carRotationOffset,
-                0f
-            );
-
-
-        Quaternion targetRotation =
-            routeRotation *
-            offsetRotation;
-
-
-        // ==================================================
-        // 平滑转向
-        // ==================================================
-
-        carTransform.rotation =
-            Quaternion.Slerp(
-                carTransform.rotation,
-                targetRotation,
-                turnSpeed *
-                Time.deltaTime
-            );
-
-
-        // ==================================================
-        // 当前速度
+        // 速度
         // ==================================================
 
         float currentSpeed =
             driveSpeed;
 
 
-        bool isLastPoint =
+        bool lastPoint =
             currentPointIndex ==
             routePoints.Length - 1;
 
 
-        // 最后一段减速
-        if (isLastPoint &&
-            distance <
-            slowDownDistance)
+        if (lastPoint &&
+            distance < slowDownDistance)
         {
-            float speedT =
+            float t =
                 Mathf.Clamp01(
                     distance /
                     slowDownDistance
@@ -407,20 +412,13 @@ public class CarDrivePassenger : MonoBehaviour
                 Mathf.Lerp(
                     minimumDriveSpeed,
                     driveSpeed,
-                    speedT
+                    t
                 );
         }
 
 
         // ==================================================
-        // 非常重要：
-        //
-        // 移动方向直接使用路线方向，
-        // 不使用 carTransform.forward。
-        //
-        // 因为你的汽车模型 forward 轴目前并不确定。
-        //
-        // Rotation Offset 只负责视觉车头方向。
+        // 先只进行水平路线移动
         // ==================================================
 
         Vector3 movement =
@@ -429,9 +427,7 @@ public class CarDrivePassenger : MonoBehaviour
             Time.deltaTime;
 
 
-        // 防止超过当前点
-        if (movement.magnitude >
-            distance)
+        if (movement.magnitude > distance)
         {
             movement =
                 flatDirection *
@@ -439,65 +435,67 @@ public class CarDrivePassenger : MonoBehaviour
         }
 
 
-        Vector3 desiredPosition =
+        Vector3 nextPosition =
             carTransform.position +
             movement;
 
 
-        // ==================================================
-        // NavMesh 自动贴地
-        // ==================================================
+        nextPosition.y =
+            carTransform.position.y;
 
-        if (useNavMeshHeight)
-        {
-            NavMeshHit hit;
-
-
-            if (NavMesh.SamplePosition(
-                desiredPosition,
-                out hit,
-                navMeshSearchDistance,
-                NavMesh.AllAreas))
-            {
-                desiredPosition.y =
-                    hit.position.y +
-                    carHeightOffset;
-            }
-            else
-            {
-                // 找不到 NavMesh 时，
-                // 绝对不要突然改变高度
-                desiredPosition.y =
-                    carTransform.position.y;
-
-
-                if (showDebugLog)
-                {
-                    Debug.LogWarning(
-                        "汽车当前位置附近没有找到 NavMesh → 暂时保持原高度"
-                    );
-                }
-            }
-        }
-        else
-        {
-            // 不使用 NavMesh 时
-            // 永远保持当前 Y
-            desiredPosition.y =
-                carTransform.position.y;
-        }
-
-
-        // ==================================================
-        // 真正移动汽车
-        // ==================================================
 
         carTransform.position =
-            desiredPosition;
+            nextPosition;
 
 
         // ==================================================
-        // 计算汽车这一帧真正移动量
+        // Waypoint负责水平车头方向
+        // ==================================================
+
+        Quaternion routeRotation =
+            Quaternion.LookRotation(
+                flatDirection,
+                Vector3.up
+            );
+
+
+        Quaternion modelOffset =
+            Quaternion.Euler(
+                0f,
+                carRotationOffset,
+                0f
+            );
+
+
+        Quaternion horizontalRotation =
+            routeRotation *
+            modelOffset;
+
+
+        carTransform.rotation =
+            Quaternion.Slerp(
+                carTransform.rotation,
+                horizontalRotation,
+                turnSpeed *
+                Time.deltaTime
+            );
+
+
+        // ==================================================
+        // 四个轮子独立检测地面
+        //
+        // 这里会继续修改：
+        // Y
+        // Pitch
+        // Roll
+        // ==================================================
+
+        UpdateWheelGroundContact();
+
+
+        // ==================================================
+        // 所有修正做完以后
+        // 再计算汽车真正移动量
         // ==================================================
 
         Vector3 carDelta =
@@ -505,20 +503,405 @@ public class CarDrivePassenger : MonoBehaviour
             carBefore;
 
 
-        // ==================================================
-        // 玩家同步汽车位移
-        //
-        // 汽车走多少，
-        // XR Origin 同样走多少。
-        //
-        // 因此玩家不会被汽车留在原地。
-        // ==================================================
-
+        // 玩家跟车
         if (xrOrigin != null)
         {
             xrOrigin.position +=
                 carDelta;
         }
+    }
+
+
+    // ======================================================
+    // 单轮检测
+    // ======================================================
+
+    private bool TryFindGround(
+        Transform wheel,
+        float radius,
+        out Vector3 contactPoint,
+        out Vector3 desiredWheelCenter)
+    {
+        contactPoint = Vector3.zero;
+        desiredWheelCenter = Vector3.zero;
+
+
+        if (wheel == null)
+            return false;
+
+
+        Vector3 rayStart =
+            wheel.position +
+            Vector3.up *
+            wheelRayStartHeight;
+
+
+        RaycastHit hit;
+
+
+        if (!Physics.Raycast(
+            rayStart,
+            Vector3.down,
+            out hit,
+            wheelRayStartHeight +
+            wheelRayDistance,
+            groundLayer,
+            QueryTriggerInteraction.Ignore))
+        {
+            return false;
+        }
+
+
+        contactPoint =
+            hit.point;
+
+
+        // ==================================================
+        // 理想的轮心位置
+        //
+        // 不再只加世界Y
+        //
+        // 而是沿着地面法线：
+        //
+        // 地面 + 轮胎半径
+        //
+        // 坡道更准确
+        // ==================================================
+
+        desiredWheelCenter =
+            hit.point +
+            hit.normal.normalized *
+            radius;
+
+
+        return true;
+    }
+
+
+    // ======================================================
+    // 前轴 / 后轴独立贴地
+    // ======================================================
+
+    private void UpdateWheelGroundContact()
+    {
+        if (wheelLB == null ||
+            wheelLF == null ||
+            wheelRB == null ||
+            wheelRF == null)
+        {
+            return;
+        }
+
+
+        // ==================================================
+        // 四轮理想轮心
+        // ==================================================
+
+        Vector3 contactLB;
+        Vector3 contactLF;
+        Vector3 contactRB;
+        Vector3 contactRF;
+
+
+        Vector3 targetLB;
+        Vector3 targetLF;
+        Vector3 targetRB;
+        Vector3 targetRF;
+
+
+        bool hitLB =
+            TryFindGround(
+                wheelLB,
+                rearWheelRadius,
+                out contactLB,
+                out targetLB
+            );
+
+
+        bool hitLF =
+            TryFindGround(
+                wheelLF,
+                frontWheelRadius,
+                out contactLF,
+                out targetLF
+            );
+
+
+        bool hitRB =
+            TryFindGround(
+                wheelRB,
+                rearWheelRadius,
+                out contactRB,
+                out targetRB
+            );
+
+
+        bool hitRF =
+            TryFindGround(
+                wheelRF,
+                frontWheelRadius,
+                out contactRF,
+                out targetRF
+            );
+
+
+        if (!hitLB ||
+            !hitLF ||
+            !hitRB ||
+            !hitRF)
+        {
+            if (showDebugLog)
+            {
+                Debug.LogWarning(
+                    "四轮贴地：至少一个轮子没有检测到Ground"
+                );
+            }
+
+            return;
+        }
+
+
+        // ==================================================
+        // 当前前轴中心
+        // ==================================================
+
+        Vector3 currentFrontCenter =
+            (
+                wheelLF.position +
+                wheelRF.position
+            ) * 0.5f;
+
+
+        // ==================================================
+        // 当前后轴中心
+        // ==================================================
+
+        Vector3 currentRearCenter =
+            (
+                wheelLB.position +
+                wheelRB.position
+            ) * 0.5f;
+
+
+        // ==================================================
+        // 理想前轴中心
+        // ==================================================
+
+        Vector3 desiredFrontCenter =
+            (
+                targetLF +
+                targetRF
+            ) * 0.5f;
+
+
+        // ==================================================
+        // 理想后轴中心
+        // ==================================================
+
+        Vector3 desiredRearCenter =
+            (
+                targetLB +
+                targetRB
+            ) * 0.5f;
+
+
+        // ==================================================
+        // 左右轴中心
+        // ==================================================
+
+        Vector3 desiredLeftCenter =
+            (
+                targetLF +
+                targetLB
+            ) * 0.5f;
+
+
+        Vector3 desiredRightCenter =
+            (
+                targetRF +
+                targetRB
+            ) * 0.5f;
+
+
+        // ==================================================
+        // 1. 前后轴独立计算坡度
+        //
+        // 这一步就是解决：
+        //
+        // 前轮悬空
+        // 后轮陷入
+        // ==================================================
+
+        Vector3 groundForward =
+            desiredFrontCenter -
+            desiredRearCenter;
+
+
+        Vector3 groundRight =
+            desiredRightCenter -
+            desiredLeftCenter;
+
+
+        if (groundForward.sqrMagnitude <
+            0.001f)
+        {
+            return;
+        }
+
+
+        if (groundRight.sqrMagnitude <
+            0.001f)
+        {
+            return;
+        }
+
+
+        groundForward.Normalize();
+        groundRight.Normalize();
+
+
+        // ==================================================
+        // 地面Up
+        // ==================================================
+
+        Vector3 groundUp =
+            Vector3.Cross(
+                groundForward,
+                groundRight
+            ).normalized;
+
+
+        if (groundUp.y < 0f)
+        {
+            groundUp =
+                -groundUp;
+        }
+
+
+        // ==================================================
+        // 保持汽车当前车头方向
+        // 只加入坡度
+        // ==================================================
+
+        Vector3 currentCarForward =
+            carTransform.forward;
+
+
+        Vector3 slopeForward =
+            Vector3.ProjectOnPlane(
+                currentCarForward,
+                groundUp
+            );
+
+
+        if (slopeForward.sqrMagnitude >
+            0.001f)
+        {
+            slopeForward.Normalize();
+
+
+            Quaternion desiredRotation =
+                Quaternion.LookRotation(
+                    slopeForward,
+                    groundUp
+                );
+
+
+            float rotT =
+                Mathf.Clamp01(
+                    groundRotationSpeed *
+                    Time.deltaTime
+                );
+
+
+            carTransform.rotation =
+                Quaternion.Slerp(
+                    carTransform.rotation,
+                    desiredRotation,
+                    rotT
+                );
+        }
+
+
+        // ==================================================
+        // 2. 不再四轮只算Y平均
+        //
+        // 直接计算：
+        //
+        // 每个实际轮心
+        // →
+        // 每个理想轮心
+        //
+        // 的世界空间位移差
+        // ==================================================
+
+        Vector3 correctionLB =
+            targetLB -
+            wheelLB.position;
+
+
+        Vector3 correctionLF =
+            targetLF -
+            wheelLF.position;
+
+
+        Vector3 correctionRB =
+            targetRB -
+            wheelRB.position;
+
+
+        Vector3 correctionRF =
+            targetRF -
+            wheelRF.position;
+
+
+        // ==================================================
+        // 四轮共同需要的整体位移
+        //
+        // Pitch 已经通过前后轴独立处理
+        //
+        // 这里负责汽车整体最终贴到地面
+        // ==================================================
+
+        Vector3 averageCorrection =
+            (
+                correctionLB +
+                correctionLF +
+                correctionRB +
+                correctionRF
+            ) / 4f;
+
+
+        // ==================================================
+        // X/Z 不让贴地系统修改
+        //
+        // X/Z还是完全由Waypoint负责
+        //
+        // 这里只修正汽车高度
+        // ==================================================
+
+        averageCorrection.x = 0f;
+        averageCorrection.z = 0f;
+
+
+        Vector3 desiredPosition =
+            carTransform.position +
+            averageCorrection;
+
+
+        float posT =
+            Mathf.Clamp01(
+                groundPositionSpeed *
+                Time.deltaTime
+            );
+
+
+        carTransform.position =
+            Vector3.Lerp(
+                carTransform.position,
+                desiredPosition,
+                posT
+            );
     }
 
 
@@ -533,8 +916,13 @@ public class CarDrivePassenger : MonoBehaviour
 
 
         arrived = true;
+
         drivingStarted = false;
 
+
+        // ==================================================
+        // 车轮停止
+        // ==================================================
 
         if (carWheelSpin != null)
         {
@@ -542,25 +930,44 @@ public class CarDrivePassenger : MonoBehaviour
         }
 
 
-        if (showDebugLog)
+        // ==================================================
+        // 汽车自己的动画继续
+        // ==================================================
+
+        if (carAnimator != null)
         {
-            Debug.Log(
-                "汽车到达最后一个 RoutePoint → 停车"
-            );
+            carAnimator.enabled = true;
         }
 
 
-        // 暂时保持 Passenger Mode
+        // ==================================================
+        // Driver Driving 继续
         //
-        // 后面我们再接：
-        // Driver说再见
-        // → 玩家下车
-        // → Passenger Mode关闭
+        // 不操作 driverAnimator
+        // ==================================================
+
+
+        // ==================================================
+        // 玩家解除脚踏板范围限制
+        // ==================================================
+
+        if (passengerController != null)
+        {
+            passengerController.ExitPassengerMode();
+        }
+
+
+        if (showDebugLog)
+        {
+            Debug.Log(
+                "终点停车 → 四轮停止 → 汽车动画继续 → Driver继续Driving → PassengerBounds解除"
+            );
+        }
     }
 
 
     // ======================================================
-    // 查询状态
+    // 查询
     // ======================================================
 
     public bool IsDriving()
@@ -572,5 +979,42 @@ public class CarDrivePassenger : MonoBehaviour
     public bool HasArrived()
     {
         return arrived;
+    }
+
+
+    // ======================================================
+    // Scene中显示四条检测线
+    // ======================================================
+
+    private void OnDrawGizmosSelected()
+    {
+        DrawRay(wheelLB);
+        DrawRay(wheelLF);
+        DrawRay(wheelRB);
+        DrawRay(wheelRF);
+    }
+
+
+    private void DrawRay(Transform wheel)
+    {
+        if (wheel == null)
+            return;
+
+
+        Vector3 start =
+            wheel.position +
+            Vector3.up *
+            wheelRayStartHeight;
+
+
+        Gizmos.DrawLine(
+            start,
+            start +
+            Vector3.down *
+            (
+                wheelRayStartHeight +
+                wheelRayDistance
+            )
+        );
     }
 }

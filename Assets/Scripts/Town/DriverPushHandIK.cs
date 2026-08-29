@@ -20,8 +20,7 @@ public class DriverPushHandIK : MonoBehaviour
     [Header("游戏开始是否开启 IK")]
     public bool enableIKOnStart = true;
 
-
-    private bool ikEnabled = true;
+    private bool ikEnabled = false;
 
 
     private void Start()
@@ -31,32 +30,29 @@ public class DriverPushHandIK : MonoBehaviour
 
 
     // ======================================================
-    // 开启推车手 IK
+    // 开启推车双手 IK
     // ======================================================
 
     public void EnablePushHandIK()
     {
         ikEnabled = true;
 
-        Debug.Log(
-            "Push Hand IK 开启"
-        );
+        Debug.Log("Push Hand IK 开启");
     }
 
 
     // ======================================================
-    // 关闭推车手 IK
+    // 关闭推车双手 IK
     // ======================================================
 
     public void DisablePushHandIK()
     {
         ikEnabled = false;
 
+        // 只在关闭这一刻清一次
         ResetHandIK();
 
-        Debug.Log(
-            "Push Hand IK 关闭"
-        );
+        Debug.Log("Push Hand IK 关闭 → 不再干扰 Driving IK");
     }
 
 
@@ -69,35 +65,26 @@ public class DriverPushHandIK : MonoBehaviour
         if (animator == null)
             return;
 
-
-        // =========================================
-        // 不再判断 Animator State
-        //
-        // 只要流程说 IK 开着，
-        // Pushing / Transition / Push Stop
-        // 全部保持手的位置
-        // =========================================
-
+        // 非常重要：
+        // 关闭后什么都不做。
+        // 不能每帧 ResetHandIK，
+        // 否则会把 DriverDrivingIK 的结果覆盖掉。
         if (!ikEnabled)
-        {
-            ResetHandIK();
             return;
-        }
-
 
         ApplyHandIK();
     }
 
 
     // ======================================================
-    // 应用左右手 IK
+    // 推车双手 IK
     // ======================================================
 
     private void ApplyHandIK()
     {
-        // =========================================
+        // -------------------------
         // 左手
-        // =========================================
+        // -------------------------
 
         if (leftHandTarget != null)
         {
@@ -111,12 +98,10 @@ public class DriverPushHandIK : MonoBehaviour
                 leftHandTarget.position
             );
 
-
             animator.SetIKRotationWeight(
                 AvatarIKGoal.LeftHand,
                 rotationWeight
             );
-
 
             if (rotationWeight > 0f)
             {
@@ -126,23 +111,11 @@ public class DriverPushHandIK : MonoBehaviour
                 );
             }
         }
-        else
-        {
-            animator.SetIKPositionWeight(
-                AvatarIKGoal.LeftHand,
-                0f
-            );
-
-            animator.SetIKRotationWeight(
-                AvatarIKGoal.LeftHand,
-                0f
-            );
-        }
 
 
-        // =========================================
+        // -------------------------
         // 右手
-        // =========================================
+        // -------------------------
 
         if (rightHandTarget != null)
         {
@@ -156,12 +129,10 @@ public class DriverPushHandIK : MonoBehaviour
                 rightHandTarget.position
             );
 
-
             animator.SetIKRotationWeight(
                 AvatarIKGoal.RightHand,
                 rotationWeight
             );
-
 
             if (rotationWeight > 0f)
             {
@@ -171,23 +142,11 @@ public class DriverPushHandIK : MonoBehaviour
                 );
             }
         }
-        else
-        {
-            animator.SetIKPositionWeight(
-                AvatarIKGoal.RightHand,
-                0f
-            );
-
-            animator.SetIKRotationWeight(
-                AvatarIKGoal.RightHand,
-                0f
-            );
-        }
     }
 
 
     // ======================================================
-    // 清除双手 IK
+    // 只在主动关闭时调用
     // ======================================================
 
     private void ResetHandIK()
@@ -195,7 +154,6 @@ public class DriverPushHandIK : MonoBehaviour
         if (animator == null)
             return;
 
-
         animator.SetIKPositionWeight(
             AvatarIKGoal.LeftHand,
             0f
@@ -206,7 +164,6 @@ public class DriverPushHandIK : MonoBehaviour
             0f
         );
 
-
         animator.SetIKPositionWeight(
             AvatarIKGoal.RightHand,
             0f
@@ -216,5 +173,11 @@ public class DriverPushHandIK : MonoBehaviour
             AvatarIKGoal.RightHand,
             0f
         );
+    }
+
+
+    public bool IsPushIKEnabled()
+    {
+        return ikEnabled;
     }
 }
