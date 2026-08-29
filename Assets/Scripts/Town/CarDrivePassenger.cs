@@ -32,6 +32,15 @@ public class CarDrivePassenger : MonoBehaviour
 
 
     // ======================================================
+    // 导航系统
+    // ======================================================
+
+    [Header("路线导航")]
+    [Tooltip("拖入场景中的 VRNavigationPath")]
+    public VRNavigationPath navigationPath;
+
+
+    // ======================================================
     // Driver
     // ======================================================
 
@@ -483,11 +492,6 @@ public class CarDrivePassenger : MonoBehaviour
 
         // ==================================================
         // 四个轮子独立检测地面
-        //
-        // 这里会继续修改：
-        // Y
-        // Pitch
-        // Roll
         // ==================================================
 
         UpdateWheelGroundContact();
@@ -556,18 +560,6 @@ public class CarDrivePassenger : MonoBehaviour
             hit.point;
 
 
-        // ==================================================
-        // 理想的轮心位置
-        //
-        // 不再只加世界Y
-        //
-        // 而是沿着地面法线：
-        //
-        // 地面 + 轮胎半径
-        //
-        // 坡道更准确
-        // ==================================================
-
         desiredWheelCenter =
             hit.point +
             hit.normal.normalized *
@@ -592,10 +584,6 @@ public class CarDrivePassenger : MonoBehaviour
             return;
         }
 
-
-        // ==================================================
-        // 四轮理想轮心
-        // ==================================================
 
         Vector3 contactLB;
         Vector3 contactLF;
@@ -661,20 +649,12 @@ public class CarDrivePassenger : MonoBehaviour
         }
 
 
-        // ==================================================
-        // 当前前轴中心
-        // ==================================================
-
         Vector3 currentFrontCenter =
             (
                 wheelLF.position +
                 wheelRF.position
             ) * 0.5f;
 
-
-        // ==================================================
-        // 当前后轴中心
-        // ==================================================
 
         Vector3 currentRearCenter =
             (
@@ -683,10 +663,6 @@ public class CarDrivePassenger : MonoBehaviour
             ) * 0.5f;
 
 
-        // ==================================================
-        // 理想前轴中心
-        // ==================================================
-
         Vector3 desiredFrontCenter =
             (
                 targetLF +
@@ -694,20 +670,12 @@ public class CarDrivePassenger : MonoBehaviour
             ) * 0.5f;
 
 
-        // ==================================================
-        // 理想后轴中心
-        // ==================================================
-
         Vector3 desiredRearCenter =
             (
                 targetLB +
                 targetRB
             ) * 0.5f;
 
-
-        // ==================================================
-        // 左右轴中心
-        // ==================================================
 
         Vector3 desiredLeftCenter =
             (
@@ -722,15 +690,6 @@ public class CarDrivePassenger : MonoBehaviour
                 targetRB
             ) * 0.5f;
 
-
-        // ==================================================
-        // 1. 前后轴独立计算坡度
-        //
-        // 这一步就是解决：
-        //
-        // 前轮悬空
-        // 后轮陷入
-        // ==================================================
 
         Vector3 groundForward =
             desiredFrontCenter -
@@ -760,10 +719,6 @@ public class CarDrivePassenger : MonoBehaviour
         groundRight.Normalize();
 
 
-        // ==================================================
-        // 地面Up
-        // ==================================================
-
         Vector3 groundUp =
             Vector3.Cross(
                 groundForward,
@@ -777,11 +732,6 @@ public class CarDrivePassenger : MonoBehaviour
                 -groundUp;
         }
 
-
-        // ==================================================
-        // 保持汽车当前车头方向
-        // 只加入坡度
-        // ==================================================
 
         Vector3 currentCarForward =
             carTransform.forward;
@@ -823,18 +773,6 @@ public class CarDrivePassenger : MonoBehaviour
         }
 
 
-        // ==================================================
-        // 2. 不再四轮只算Y平均
-        //
-        // 直接计算：
-        //
-        // 每个实际轮心
-        // →
-        // 每个理想轮心
-        //
-        // 的世界空间位移差
-        // ==================================================
-
         Vector3 correctionLB =
             targetLB -
             wheelLB.position;
@@ -855,14 +793,6 @@ public class CarDrivePassenger : MonoBehaviour
             wheelRF.position;
 
 
-        // ==================================================
-        // 四轮共同需要的整体位移
-        //
-        // Pitch 已经通过前后轴独立处理
-        //
-        // 这里负责汽车整体最终贴到地面
-        // ==================================================
-
         Vector3 averageCorrection =
             (
                 correctionLB +
@@ -871,14 +801,6 @@ public class CarDrivePassenger : MonoBehaviour
                 correctionRF
             ) / 4f;
 
-
-        // ==================================================
-        // X/Z 不让贴地系统修改
-        //
-        // X/Z还是完全由Waypoint负责
-        //
-        // 这里只修正汽车高度
-        // ==================================================
 
         averageCorrection.x = 0f;
         averageCorrection.z = 0f;
@@ -942,7 +864,6 @@ public class CarDrivePassenger : MonoBehaviour
 
         // ==================================================
         // Driver Driving 继续
-        //
         // 不操作 driverAnimator
         // ==================================================
 
@@ -957,10 +878,35 @@ public class CarDrivePassenger : MonoBehaviour
         }
 
 
+        // ==================================================
+        // ★ 新增：
+        // 玩家搭车路线结束
+        // 恢复地面导航箭头
+        // ==================================================
+
+        if (navigationPath != null)
+        {
+            navigationPath.ShowNavigation();
+
+            if (showDebugLog)
+            {
+                Debug.Log(
+                    "玩家到达下车点 → 恢复黄色导航箭头"
+                );
+            }
+        }
+        else
+        {
+            Debug.LogWarning(
+                "CarDrivePassenger：Navigation Path 没有设置！"
+            );
+        }
+
+
         if (showDebugLog)
         {
             Debug.Log(
-                "终点停车 → 四轮停止 → 汽车动画继续 → Driver继续Driving → PassengerBounds解除"
+                "终点停车 → 四轮停止 → PassengerBounds解除 → 黄色导航恢复"
             );
         }
     }

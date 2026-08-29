@@ -11,9 +11,6 @@ public class StepBoardGlowPulse : MonoBehaviour
     public float maxIntensity = 1.5f;
     public float pulseSpeed = 1f;
 
-    [Header("测试")]
-    public bool testGlowOnStart = true;
-
     private Material glowMaterial;
     private bool isGlowing = false;
 
@@ -21,24 +18,23 @@ public class StepBoardGlowPulse : MonoBehaviour
     {
         if (glowRenderer == null)
         {
-            Debug.LogWarning("StepBoardGlowPulse：没有设置 Glow Renderer！");
+            Debug.LogWarning(
+                "StepBoardGlowPulse：没有设置 Glow Renderer！"
+            );
             return;
         }
 
-        // 创建独立材质实例，避免影响其他使用同一材质的物体
-        glowMaterial = glowRenderer.material;
+        // 独立材质
+        glowMaterial =
+            glowRenderer.material;
 
-        // 开启 Emission
-        glowMaterial.EnableKeyword("_EMISSION");
+        glowMaterial.EnableKeyword(
+            "_EMISSION"
+        );
 
-        // 默认先隐藏外壳
+        // 游戏开始不亮
         glowRenderer.enabled = false;
-
-        // 临时测试：游戏开始直接呼吸发光
-        if (testGlowOnStart)
-        {
-            StartGlow();
-        }
+        isGlowing = false;
     }
 
     void Update()
@@ -49,11 +45,11 @@ public class StepBoardGlowPulse : MonoBehaviour
         if (glowMaterial == null)
             return;
 
-        // 生成 0~1 的循环值
         float pulse =
-            (Mathf.Sin(Time.time * pulseSpeed) + 1f) / 2f;
+            (Mathf.Sin(
+                Time.time * pulseSpeed
+            ) + 1f) / 2f;
 
-        // 根据呼吸变化计算亮度
         float intensity =
             Mathf.Lerp(
                 minIntensity,
@@ -61,19 +57,16 @@ public class StepBoardGlowPulse : MonoBehaviour
                 pulse
             );
 
-        // 设置发光颜色
-        Color emissionColor =
-            glowColor * intensity;
-
         glowMaterial.SetColor(
             "_EmissionColor",
-            emissionColor
+            glowColor * intensity
         );
     }
 
-    // =========================
-    // 开始呼吸发光
-    // =========================
+    // ======================================================
+    // Driver 上车以后调用
+    // ======================================================
+
     public void StartGlow()
     {
         if (glowRenderer == null)
@@ -83,12 +76,15 @@ public class StepBoardGlowPulse : MonoBehaviour
 
         glowRenderer.enabled = true;
 
-        Debug.Log("脚踏板开始蓝色呼吸发光");
+        Debug.Log(
+            "Driver已上车 → 脚踏板开始蓝色呼吸"
+        );
     }
 
-    // =========================
-    // 停止呼吸发光
-    // =========================
+    // ======================================================
+    // 玩家上车以后调用
+    // ======================================================
+
     public void StopGlow()
     {
         isGlowing = false;
@@ -98,18 +94,16 @@ public class StepBoardGlowPulse : MonoBehaviour
             glowRenderer.enabled = false;
         }
 
-        Debug.Log("脚踏板停止发光");
-    }
+        if (glowMaterial != null)
+        {
+            glowMaterial.SetColor(
+                "_EmissionColor",
+                Color.black
+            );
+        }
 
-    // =========================
-    // 永久关闭
-    // =========================
-    public void StopGlowPermanently()
-    {
-        StopGlow();
-
-        enabled = false;
-
-        Debug.Log("脚踏板发光永久关闭");
+        Debug.Log(
+            "玩家已上车 → 脚踏板停止发光"
+        );
     }
 }

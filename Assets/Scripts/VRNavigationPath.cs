@@ -15,6 +15,16 @@ public class VRNavigationPath : MonoBehaviour
 
 
     // =========================================================
+    // 导航总开关
+    // =========================================================
+
+    [Header("Navigation Control")]
+
+    [Tooltip("总导航开关。关闭后固定箭头和自动箭头都会隐藏")]
+    public bool navigationEnabled = true;
+
+
+    // =========================================================
     // Fixed Navigation
     // =========================================================
 
@@ -113,7 +123,6 @@ public class VRNavigationPath : MonoBehaviour
     private readonly HashSet<AutoNavigationZone> activeAutoZones =
         new HashSet<AutoNavigationZone>();
 
-
     private NavigationSegment currentSegment;
 
 
@@ -140,10 +149,18 @@ public class VRNavigationPath : MonoBehaviour
 
         HideAutoArrows();
 
+
         if (player != null)
         {
             currentSegment =
                 FindNearestSegment();
+        }
+
+
+        // 如果Inspector里一开始就是关闭状态
+        if (!navigationEnabled)
+        {
+            HideAllNavigationVisuals();
         }
     }
 
@@ -154,11 +171,31 @@ public class VRNavigationPath : MonoBehaviour
 
     private void Update()
     {
+        // =====================================================
+        // 总导航关闭
+        //
+        // 不关闭脚本本身
+        // 只隐藏所有箭头
+        //
+        // 这样之后仍然可以通过 ShowNavigation()
+        // 恢复导航
+        // =====================================================
+
+        if (!navigationEnabled)
+        {
+            HideAllNavigationVisuals();
+            return;
+        }
+
+
         if (player == null)
             return;
 
 
-        // AutoNavZone 中
+        // =====================================================
+        // AutoNavigationZone 中
+        // =====================================================
+
         if (activeAutoZones.Count > 0)
         {
             HideAllFixedArrows();
@@ -169,10 +206,72 @@ public class VRNavigationPath : MonoBehaviour
         }
 
 
+        // =====================================================
         // 正常固定箭头导航
+        // =====================================================
+
         HideAutoArrows();
 
         UpdateFixedNavigation();
+    }
+
+
+    // =========================================================
+    // ★ 新增
+    // 隐藏整个导航系统
+    //
+    // 玩家成功帮助推车以后调用
+    // =========================================================
+
+    public void HideNavigation()
+    {
+        navigationEnabled = false;
+
+        HideAllNavigationVisuals();
+
+        Debug.Log(
+            "VRNavigationPath：导航隐藏 → 玩家进入搭车路线"
+        );
+    }
+
+
+    // =========================================================
+    // ★ 新增
+    // 恢复整个导航系统
+    //
+    // 玩家下车以后调用
+    // =========================================================
+
+    public void ShowNavigation()
+    {
+        navigationEnabled = true;
+
+
+        // 玩家搭车以后位置已经改变
+        // 所以恢复导航时重新寻找当前位置附近的 Segment
+        if (player != null)
+        {
+            currentSegment =
+                FindNearestSegment();
+        }
+
+
+        Debug.Log(
+            "VRNavigationPath：导航恢复 → 从玩家当前位置继续导航"
+        );
+    }
+
+
+    // =========================================================
+    // ★ 新增
+    // 同时隐藏固定箭头 + 自动箭头
+    // =========================================================
+
+    private void HideAllNavigationVisuals()
+    {
+        HideAllFixedArrows();
+
+        HideAutoArrows();
     }
 
 
@@ -196,6 +295,7 @@ public class VRNavigationPath : MonoBehaviour
             NavigationSegment segment =
                 new NavigationSegment();
 
+
             segment.root =
                 segmentRoot;
 
@@ -212,6 +312,7 @@ public class VRNavigationPath : MonoBehaviour
                         child.gameObject
                     );
 
+
                     allFixedArrows.Add(
                         child.gameObject
                     );
@@ -221,7 +322,9 @@ public class VRNavigationPath : MonoBehaviour
 
             if (segment.arrows.Count > 0)
             {
-                segments.Add(segment);
+                segments.Add(
+                    segment
+                );
             }
         }
 
@@ -266,7 +369,6 @@ public class VRNavigationPath : MonoBehaviour
             return;
 
 
-        // 关键修改：
         // 每帧根据当前位置重新找当前前方最近箭头
         int currentArrowIndex =
             FindBestForwardArrowIndex(
@@ -333,7 +435,8 @@ public class VRNavigationPath : MonoBehaviour
 
             if (
                 segment != currentSegment &&
-                distance + branchSwitchAdvantage
+                distance +
+                branchSwitchAdvantage
                 < bestDistance
             )
             {
@@ -355,8 +458,7 @@ public class VRNavigationPath : MonoBehaviour
     // =========================================================
 
     private float GetSegmentDistance(
-        NavigationSegment segment
-    )
+        NavigationSegment segment)
     {
         if (
             segment == null ||
@@ -400,18 +502,11 @@ public class VRNavigationPath : MonoBehaviour
 
 
     // =========================================================
-    // 找当前 Segment 里最合适的“前方箭头”
-    //
-    // 优先：
-    // 1. 玩家前方
-    // 2. NavMesh路径距离最近
-    //
-    // 如果前方一个都没有，再退回最近箭头
+    // 找当前 Segment 里最合适的前方箭头
     // =========================================================
 
     private int FindBestForwardArrowIndex(
-        NavigationSegment segment
-    )
+        NavigationSegment segment)
     {
         if (
             segment == null ||
@@ -424,6 +519,7 @@ public class VRNavigationPath : MonoBehaviour
 
         Vector3 playerForward =
             player.forward;
+
 
         playerForward.y = 0f;
 
@@ -444,12 +540,14 @@ public class VRNavigationPath : MonoBehaviour
         int bestForwardIndex =
             -1;
 
+
         float bestForwardDistance =
             Mathf.Infinity;
 
 
         int nearestIndex =
             0;
+
 
         float nearestDistance =
             Mathf.Infinity;
@@ -489,6 +587,7 @@ public class VRNavigationPath : MonoBehaviour
                 nearestDistance =
                     pathDistance;
 
+
                 nearestIndex =
                     i;
             }
@@ -498,6 +597,7 @@ public class VRNavigationPath : MonoBehaviour
             Vector3 toArrow =
                 arrow.transform.position
                 - player.position;
+
 
             toArrow.y = 0f;
 
@@ -522,8 +622,8 @@ public class VRNavigationPath : MonoBehaviour
 
 
             if (
-                dot
-                >= fixedArrowForwardDotThreshold
+                dot >=
+                fixedArrowForwardDotThreshold
             )
             {
                 if (
@@ -534,6 +634,7 @@ public class VRNavigationPath : MonoBehaviour
                     bestForwardDistance =
                         pathDistance;
 
+
                     bestForwardIndex =
                         i;
                 }
@@ -541,26 +642,25 @@ public class VRNavigationPath : MonoBehaviour
         }
 
 
-        // 有前方箭头，优先前方
+        // 有前方箭头
         if (bestForwardIndex >= 0)
         {
             return bestForwardIndex;
         }
 
 
-        // 前方没有，就用最近箭头
+        // 没有就用最近箭头
         return nearestIndex;
     }
 
 
     // =========================================================
-    // 显示当前箭头 + 后面两个
+    // 显示当前箭头 + 后面几个
     // =========================================================
 
     private void ShowNextFixedArrows(
         NavigationSegment segment,
-        int startIndex
-    )
+        int startIndex)
     {
         if (segment == null)
             return;
@@ -598,12 +698,13 @@ public class VRNavigationPath : MonoBehaviour
 
             arrow.SetActive(true);
 
+
             shown++;
 
 
             if (
-                shown
-                >= maxVisibleFixedArrows
+                shown >=
+                maxVisibleFixedArrows
             )
             {
                 break;
@@ -642,6 +743,7 @@ public class VRNavigationPath : MonoBehaviour
                 bestDistance =
                     distance;
 
+
                 bestSegment =
                     segment;
             }
@@ -657,26 +759,28 @@ public class VRNavigationPath : MonoBehaviour
     // =========================================================
 
     public void EnterAutoNavigationZone(
-        AutoNavigationZone zone
-    )
+        AutoNavigationZone zone)
     {
         if (zone == null)
             return;
 
 
-        activeAutoZones.Add(zone);
+        activeAutoZones.Add(
+            zone
+        );
     }
 
 
     public void ExitAutoNavigationZone(
-        AutoNavigationZone zone
-    )
+        AutoNavigationZone zone)
     {
         if (zone == null)
             return;
 
 
-        activeAutoZones.Remove(zone);
+        activeAutoZones.Remove(
+            zone
+        );
 
 
         if (
@@ -725,8 +829,8 @@ public class VRNavigationPath : MonoBehaviour
 
 
         if (
-            path.status
-            != NavMeshPathStatus.PathComplete
+            path.status !=
+            NavMeshPathStatus.PathComplete
         )
         {
             return;
@@ -751,8 +855,8 @@ public class VRNavigationPath : MonoBehaviour
         )
         {
             if (
-                shown
-                >= autoArrows.Count
+                shown >=
+                autoArrows.Count
             )
             {
                 break;
@@ -803,8 +907,8 @@ public class VRNavigationPath : MonoBehaviour
             )
             {
                 Vector3 direction =
-                    endHit.position
-                    - player.position;
+                    endHit.position -
+                    player.position;
 
 
                 PlaceAutoArrow(
@@ -824,8 +928,7 @@ public class VRNavigationPath : MonoBehaviour
     private bool TryCalculateDestinationPath(
         Vector3 start,
         Vector3 end,
-        NavMeshPath result
-    )
+        NavMeshPath result)
     {
         if (
             !TrySamplePlayerNavMesh(
@@ -862,20 +965,18 @@ public class VRNavigationPath : MonoBehaviour
 
         return
             success &&
-            result.status
-            == NavMeshPathStatus.PathComplete;
+            result.status ==
+            NavMeshPathStatus.PathComplete;
     }
 
 
     // =========================================================
     // Player NavMesh sample
-    // 防止吸到错误楼层
     // =========================================================
 
     private bool TrySamplePlayerNavMesh(
         Vector3 worldPosition,
-        out NavMeshHit bestHit
-    )
+        out NavMeshHit bestHit)
     {
         bestHit =
             new NavMeshHit();
@@ -896,14 +997,14 @@ public class VRNavigationPath : MonoBehaviour
 
         float verticalDifference =
             Mathf.Abs(
-                hit.position.y
-                - worldPosition.y
+                hit.position.y -
+                worldPosition.y
             );
 
 
         if (
-            verticalDifference
-            > maxVerticalSnapDistance
+            verticalDifference >
+            maxVerticalSnapDistance
         )
         {
             return false;
@@ -924,8 +1025,7 @@ public class VRNavigationPath : MonoBehaviour
 
     private float GetNavMeshDistance(
         Vector3 start,
-        Vector3 end
-    )
+        Vector3 end)
     {
         NavMeshPath path =
             new NavMeshPath();
@@ -966,12 +1066,13 @@ public class VRNavigationPath : MonoBehaviour
 
 
     // =========================================================
+    // Calculate Path
+    // =========================================================
 
     private bool TryCalculatePath(
         Vector3 start,
         Vector3 end,
-        NavMeshPath result
-    )
+        NavMeshPath result)
     {
         if (
             !TrySamplePlayerNavMesh(
@@ -1008,8 +1109,8 @@ public class VRNavigationPath : MonoBehaviour
 
         return
             success &&
-            result.status
-            == NavMeshPathStatus.PathComplete;
+            result.status ==
+            NavMeshPathStatus.PathComplete;
     }
 
 
@@ -1021,11 +1122,11 @@ public class VRNavigationPath : MonoBehaviour
         NavMeshPath path,
         float targetDistance,
         out Vector3 point,
-        out Vector3 direction
-    )
+        out Vector3 direction)
     {
         point =
             Vector3.zero;
+
 
         direction =
             Vector3.forward;
@@ -1054,6 +1155,7 @@ public class VRNavigationPath : MonoBehaviour
             Vector3 start =
                 path.corners[i];
 
+
             Vector3 end =
                 path.corners[i + 1];
 
@@ -1066,8 +1168,8 @@ public class VRNavigationPath : MonoBehaviour
 
 
             if (
-                segmentLength
-                < 0.001f
+                segmentLength <
+                0.001f
             )
             {
                 continue;
@@ -1075,13 +1177,14 @@ public class VRNavigationPath : MonoBehaviour
 
 
             if (
-                travelled + segmentLength
-                >= targetDistance
+                travelled +
+                segmentLength >=
+                targetDistance
             )
             {
                 float remaining =
-                    targetDistance
-                    - travelled;
+                    targetDistance -
+                    travelled;
 
 
                 Vector3 segmentDirection =
@@ -1089,9 +1192,9 @@ public class VRNavigationPath : MonoBehaviour
 
 
                 point =
-                    start
-                    + segmentDirection
-                    * remaining;
+                    start +
+                    segmentDirection *
+                    remaining;
 
 
                 direction =
@@ -1124,8 +1227,7 @@ public class VRNavigationPath : MonoBehaviour
         NavMeshPath path,
         int currentCornerIndex,
         Vector3 currentPoint,
-        float lookAheadDistance
-    )
+        float lookAheadDistance)
     {
         if (
             path == null ||
@@ -1167,8 +1269,8 @@ public class VRNavigationPath : MonoBehaviour
 
 
             if (
-                length
-                < 0.001f
+                length <
+                0.001f
             )
             {
                 from =
@@ -1179,19 +1281,19 @@ public class VRNavigationPath : MonoBehaviour
 
 
             if (
-                length
-                >= remainingLookAhead
+                length >=
+                remainingLookAhead
             )
             {
                 Vector3 lookPoint =
-                    from
-                    + delta.normalized
-                    * remainingLookAhead;
+                    from +
+                    delta.normalized *
+                    remainingLookAhead;
 
 
                 Vector3 roadDirection =
-                    lookPoint
-                    - currentPoint;
+                    lookPoint -
+                    currentPoint;
 
 
                 roadDirection.y =
@@ -1199,8 +1301,8 @@ public class VRNavigationPath : MonoBehaviour
 
 
                 if (
-                    roadDirection.sqrMagnitude
-                    > 0.001f
+                    roadDirection.sqrMagnitude >
+                    0.001f
                 )
                 {
                     return
@@ -1221,8 +1323,8 @@ public class VRNavigationPath : MonoBehaviour
         Vector3 finalDirection =
             path.corners[
                 path.corners.Length - 1
-            ]
-            - currentPoint;
+            ] -
+            currentPoint;
 
 
         finalDirection.y =
@@ -1230,8 +1332,8 @@ public class VRNavigationPath : MonoBehaviour
 
 
         if (
-            finalDirection.sqrMagnitude
-            > 0.001f
+            finalDirection.sqrMagnitude >
+            0.001f
         )
         {
             return
@@ -1249,8 +1351,7 @@ public class VRNavigationPath : MonoBehaviour
 
     private Vector3 GetCenteredNavMeshPosition(
         Vector3 pathPoint,
-        Vector3 pathDirection
-    )
+        Vector3 pathDirection)
     {
         if (!centerArrowOnNavMesh)
             return pathPoint;
@@ -1259,13 +1360,14 @@ public class VRNavigationPath : MonoBehaviour
         Vector3 flatDirection =
             pathDirection;
 
+
         flatDirection.y =
             0f;
 
 
         if (
-            flatDirection.sqrMagnitude
-            < 0.001f
+            flatDirection.sqrMagnitude <
+            0.001f
         )
         {
             return pathPoint;
@@ -1299,18 +1401,21 @@ public class VRNavigationPath : MonoBehaviour
         )
         {
             float offset =
-                centerSearchWidth
-                * ((float)i / centerSearchSteps);
+                centerSearchWidth *
+                ((float)i /
+                centerSearchSteps);
 
 
             Vector3 leftCandidate =
-                pathPoint
-                - right * offset;
+                pathPoint -
+                right *
+                offset;
 
 
             Vector3 rightCandidate =
-                pathPoint
-                + right * offset;
+                pathPoint +
+                right *
+                offset;
 
 
             TestCenterCandidate(
@@ -1338,8 +1443,7 @@ public class VRNavigationPath : MonoBehaviour
         Vector3 candidate,
         float expectedHeight,
         ref Vector3 bestPosition,
-        ref float bestEdgeDistance
-    )
+        ref float bestEdgeDistance)
     {
         if (
             !NavMesh.SamplePosition(
@@ -1356,10 +1460,9 @@ public class VRNavigationPath : MonoBehaviour
 
         if (
             Mathf.Abs(
-                sampleHit.position.y
-                - expectedHeight
-            )
-            > 0.5f
+                sampleHit.position.y -
+                expectedHeight
+            ) > 0.5f
         )
         {
             return;
@@ -1373,8 +1476,8 @@ public class VRNavigationPath : MonoBehaviour
 
 
         if (
-            edgeDistance
-            > bestEdgeDistance
+            edgeDistance >
+            bestEdgeDistance
         )
         {
             bestEdgeDistance =
@@ -1388,8 +1491,7 @@ public class VRNavigationPath : MonoBehaviour
 
 
     private float GetDistanceFromNavMeshEdge(
-        Vector3 position
-    )
+        Vector3 position)
     {
         if (
             NavMesh.FindClosestEdge(
@@ -1418,8 +1520,7 @@ public class VRNavigationPath : MonoBehaviour
     private void PlaceAutoArrow(
         GameObject arrow,
         Vector3 navPosition,
-        Vector3 direction
-    )
+        Vector3 direction)
     {
         if (arrow == null)
             return;
@@ -1429,9 +1530,9 @@ public class VRNavigationPath : MonoBehaviour
 
 
         arrow.transform.position =
-            navPosition
-            + Vector3.up
-            * autoArrowHeight;
+            navPosition +
+            Vector3.up *
+            autoArrowHeight;
 
 
         Vector3 flatDirection =
@@ -1443,8 +1544,8 @@ public class VRNavigationPath : MonoBehaviour
 
 
         if (
-            flatDirection.sqrMagnitude
-            < 0.001f
+            flatDirection.sqrMagnitude <
+            0.001f
         )
         {
             return;
@@ -1462,8 +1563,8 @@ public class VRNavigationPath : MonoBehaviour
 
 
         arrow.transform.rotation =
-            pathRotation
-            * Quaternion.Euler(
+            pathRotation *
+            Quaternion.Euler(
                 autoArrowRotationOffset
             );
     }
@@ -1508,11 +1609,13 @@ public class VRNavigationPath : MonoBehaviour
 
 
             arrow.name =
-                "AutoNavigationArrow_"
-                + (i + 1);
+                "AutoNavigationArrow_" +
+                (i + 1);
 
 
-            arrow.SetActive(false);
+            arrow.SetActive(
+                false
+            );
 
 
             autoArrows.Add(
@@ -1523,7 +1626,7 @@ public class VRNavigationPath : MonoBehaviour
 
 
     // =========================================================
-    // Hide
+    // Hide Fixed Arrows
     // =========================================================
 
     private void HideAllFixedArrows()
@@ -1535,11 +1638,17 @@ public class VRNavigationPath : MonoBehaviour
         {
             if (arrow != null)
             {
-                arrow.SetActive(false);
+                arrow.SetActive(
+                    false
+                );
             }
         }
     }
 
+
+    // =========================================================
+    // Hide Auto Arrows
+    // =========================================================
 
     private void HideAutoArrows()
     {
@@ -1550,7 +1659,9 @@ public class VRNavigationPath : MonoBehaviour
         {
             if (arrow != null)
             {
-                arrow.SetActive(false);
+                arrow.SetActive(
+                    false
+                );
             }
         }
     }
