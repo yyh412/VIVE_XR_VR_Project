@@ -329484,6 +329484,7 @@ GameObject:
   - component: {fileID: 919132148795567880}
   - component: {fileID: 919132148795567881}
   - component: {fileID: 919132148795567882}
+  - component: {fileID: 919132148795567883}
   m_Layer: 0
   m_Name: Briefcase
   m_TagString: Untagged
@@ -329541,6 +329542,24 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 0.40215078, y: 0.17078859, z: 0.321609}
   m_Center: {x: 0.07391633, y: -0.005780726, z: -0.14399543}
+--- !u!114 &919132148795567883
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 919132148795567879}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68726c590faf60b42b84b8c567d9e4db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  landingPoint: {fileID: 0}
+  settleDelay: 0.5
+  moveDuration: 0.8
+  heightOffset: 0.02
+  rb: {fileID: 0}
+  fixedInPlace: 0
 --- !u!1 &932784934874126538
 GameObject:
   m_ObjectHideFlags: 0
