@@ -34,6 +34,10 @@ public class PushStopCarSync : MonoBehaviour
     [Header("车轮控制")]
     public CarWheelSpin carWheelSpin;
 
+    [Header("帮助完成后环境恢复彩色")]
+    [Tooltip("拖入 DriverColorZone")]
+    public EnvironmentColorZone environmentColorZone;
+
 
     // ======================================================
     // 字幕 / 语音
@@ -743,6 +747,27 @@ public class PushStopCarSync : MonoBehaviour
 
             Debug.Log(
                 "Push Stop结束 → Pause Idle"
+            );
+        }
+
+
+        // =========================================
+        // 5. 帮助完成 → 周围环境恢复彩色
+        // =========================================
+
+        if (environmentColorZone != null)
+        {
+            environmentColorZone.RestoreColorInZone();
+
+
+            Debug.Log(
+                "Push Stop结束 → Driver周围环境恢复彩色"
+            );
+        }
+        else
+        {
+            Debug.LogWarning(
+                "PushStopCarSync 没有设置 EnvironmentColorZone"
             );
         }
     }
