@@ -1,41 +1,47 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class DriverGazeTarget : MonoBehaviour
+public class MansuitGazeTarget : MonoBehaviour
 {
     [Header("真实眼动射线")]
     public CombinedEyeGazeRay eyeGazeRay;
 
-    [Header("Driver 求助流程")]
-    [Tooltip("拖入 HelpTrigger 上面的 DriverHelpTrigger")]
-    public DriverHelpTrigger driverHelpTrigger;
 
     [Header("允许触发这个事件的目标")]
-    [Tooltip("例如 driver3、car、mud")]
+    [Tooltip("例如 Mansuit 本体，也可以以后加入公文包、纸张等")]
     public Transform[] gazeTargets;
 
+
     [Header("恢复彩色的根物体")]
-    [Tooltip("看满1秒后，这些物体一起恢复彩色")]
+    [Tooltip("看满1秒后，哪些物体一起恢复原来的彩色")]
     public Transform[] colorRoots;
+
 
     [Header("三种灰度材质")]
     public Material grayDark;
     public Material grayMid;
     public Material grayLight;
 
+
     [Header("深灰部件")]
     public Renderer[] darkRenderers;
+
 
     [Header("中灰部件")]
     public Renderer[] midRenderers;
 
+
     [Header("浅灰部件")]
     public Renderer[] lightRenderers;
 
+
     [Header("注视设置")]
+    [Tooltip("持续注视多久后恢复彩色")]
     public float requiredGazeTime = 1.0f;
 
+    [Tooltip("允许短暂移开视线的最长时间")]
     public float gazeBreakTolerance = 0.5f;
+
 
     [Header("调试")]
     public bool showDebugLog = false;
@@ -53,21 +59,28 @@ public class DriverGazeTarget : MonoBehaviour
 
     private void Start()
     {
+        // 收集所有需要恢复颜色的 Renderer
         CollectAllColorRenderers();
+
 
         if (allColorRenderers == null ||
             allColorRenderers.Length == 0)
         {
             Debug.LogError(
-                "[DriverGazeTarget] 没找到需要恢复颜色的 Renderer。"
+                "[MansuitGazeTarget] 没找到需要恢复颜色的 Renderer。"
             );
 
             return;
         }
 
+
+        // 先保存原来的彩色材质
         SaveOriginalMaterials();
 
+
+        // 再应用黑白灰材质
         ApplyGrayscale();
+
 
         gazeTimer = 0f;
         lookAwayTimer = 0f;
@@ -103,7 +116,7 @@ public class DriverGazeTarget : MonoBehaviour
             if (showDebugLog)
             {
                 Debug.Log(
-                    "[DriverGazeTarget] 注视事件：" +
+                    "[MansuitGazeTarget] 注视：" +
                     gazeTimer.ToString("F2") +
                     " / " +
                     requiredGazeTime.ToString("F2")
@@ -131,7 +144,7 @@ public class DriverGazeTarget : MonoBehaviour
 
 
     // =====================================================
-    // 判断现在是不是在看 Driver / Car / Mud
+    // 判断眼睛有没有看指定目标
     // =====================================================
 
     private bool IsLookingAtEvent()
@@ -171,10 +184,12 @@ public class DriverGazeTarget : MonoBehaviour
                 continue;
 
 
+            // 直接打中根物体
             if (hitTransform == target)
                 return true;
 
 
+            // 打中目标的子物体
             if (hitTransform.IsChildOf(target))
                 return true;
         }
@@ -185,7 +200,7 @@ public class DriverGazeTarget : MonoBehaviour
 
 
     // =====================================================
-    // 收集需要恢复彩色的 Renderer
+    // 收集所有需要恢复彩色的 Renderer
     // =====================================================
 
     private void CollectAllColorRenderers()
@@ -278,7 +293,7 @@ public class DriverGazeTarget : MonoBehaviour
 
 
     // =====================================================
-    // 初始变成黑白灰
+    // 游戏开始时变成黑白灰
     // =====================================================
 
     private void ApplyGrayscale()
@@ -288,10 +303,12 @@ public class DriverGazeTarget : MonoBehaviour
             grayDark
         );
 
+
         ApplyGrayMaterial(
             midRenderers,
             grayMid
         );
+
 
         ApplyGrayMaterial(
             lightRenderers,
@@ -299,6 +316,10 @@ public class DriverGazeTarget : MonoBehaviour
         );
     }
 
+
+    // =====================================================
+    // 给指定 Renderer 换灰度材质
+    // =====================================================
 
     private void ApplyGrayMaterial(
         Renderer[] renderers,
@@ -347,7 +368,7 @@ public class DriverGazeTarget : MonoBehaviour
 
 
     // =====================================================
-    // 注视成功
+    // 恢复彩色
     // =====================================================
 
     public void RevealColor()
@@ -362,7 +383,6 @@ public class DriverGazeTarget : MonoBehaviour
         hasRevealedColor = true;
 
 
-        // 1. Driver + Car + Mud 恢复彩色
         for (int i = 0;
              i < allColorRenderers.Length;
              i++)
@@ -377,30 +397,13 @@ public class DriverGazeTarget : MonoBehaviour
 
 
         Debug.Log(
-            "[DriverGazeTarget] Driver + Car + Mud 已恢复彩色。"
+            "[MansuitGazeTarget] Mansuit 已恢复彩色。"
         );
-
-
-        // 2. 同时启动 Driver 求助流程
-        if (driverHelpTrigger != null)
-        {
-            driverHelpTrigger.TriggerHelp();
-
-            Debug.Log(
-                "[DriverGazeTarget] 眼动成功 → 启动 Driver Talking。"
-            );
-        }
-        else
-        {
-            Debug.LogWarning(
-                "[DriverGazeTarget] 没有设置 Driver Help Trigger。"
-            );
-        }
     }
 
 
     // =====================================================
-    // 调试：重新变灰
+    // 调试：重新变回黑白灰
     // =====================================================
 
     public void ResetToGray()
@@ -411,6 +414,7 @@ public class DriverGazeTarget : MonoBehaviour
 
         gazeTimer = 0f;
         lookAwayTimer = 0f;
+
         hasRevealedColor = false;
 
 
@@ -418,7 +422,7 @@ public class DriverGazeTarget : MonoBehaviour
 
 
         Debug.Log(
-            "[DriverGazeTarget] Driver + Car + Mud 已重新变成黑白灰。"
+            "[MansuitGazeTarget] 已重新变成黑白灰。"
         );
     }
 }

@@ -28,9 +28,38 @@ public class DriverHelpTrigger : MonoBehaviour
     [Header("Talking 动画时间")]
     public float talkingDuration = 3.93f;
 
+    [Header("触发方式")]
+    [Tooltip("现在用眼动触发，所以建议关闭")]
+    public bool allowAreaTrigger = false;
+
+    private bool hasTriggered = false;
+
+
+    // ==================================================
+    // 原来的区域触发
+    // 现在默认关闭
+    // ==================================================
 
     private void OnTriggerEnter(Collider other)
     {
+        if (!allowAreaTrigger)
+            return;
+
+        TriggerHelp();
+    }
+
+
+    // ==================================================
+    // 新增：
+    // 给眼动系统调用
+    // ==================================================
+
+    public void TriggerHelp()
+    {
+        if (hasTriggered)
+            return;
+
+
         if (carHelpManager == null)
             return;
 
@@ -42,9 +71,11 @@ public class DriverHelpTrigger : MonoBehaviour
         }
 
 
+        hasTriggered = true;
+
+
         Debug.Log(
-            "正确进入 HelpTrigger: " +
-            other.name
+            "[DriverHelpTrigger] 眼动触发 Driver 求助流程。"
         );
 
 
@@ -69,9 +100,7 @@ public class DriverHelpTrigger : MonoBehaviour
 
 
         // ==================================================
-        // 0. 最重要：
-        // Driver准备转向玩家之前
-        // 立刻释放推车双手IK
+        // 0. Driver 转向玩家前关闭推车手 IK
         // ==================================================
 
         if (driverPushHandIK != null)
@@ -79,7 +108,7 @@ public class DriverHelpTrigger : MonoBehaviour
             driverPushHandIK.DisablePushHandIK();
 
             Debug.Log(
-                "进入HelpTrigger → 推车手IK关闭"
+                "Driver 开始求助 → 推车手 IK 关闭"
             );
         }
 
@@ -93,7 +122,6 @@ public class DriverHelpTrigger : MonoBehaviour
             driverTransform.position;
 
 
-        // 只绕 Y 轴
         direction.y = 0f;
 
 
@@ -125,7 +153,6 @@ public class DriverHelpTrigger : MonoBehaviour
                     );
 
 
-                // 比普通Slerp稍微柔和一点
                 float smoothT =
                     t * t *
                     (3f - 2f * t);
@@ -159,7 +186,7 @@ public class DriverHelpTrigger : MonoBehaviour
 
 
         // ==================================================
-        // 3. 切 Talking 动画
+        // 3. Talking 动画
         // ==================================================
 
         if (driverAnimator != null)
@@ -171,7 +198,7 @@ public class DriverHelpTrigger : MonoBehaviour
 
 
         // ==================================================
-        // 4. 等 Talking 播放完成
+        // 4. 等待 Talking 播放结束
         // ==================================================
 
         yield return new WaitForSeconds(
@@ -180,10 +207,7 @@ public class DriverHelpTrigger : MonoBehaviour
 
 
         // ==================================================
-        // 5. Talking结束后显示蓝色手印
-        //
-        // 这里仍然不要马上重新开启手IK
-        // 因为 Driver 现在还没有重新进入真正的推车流程
+        // 5. 显示蓝色手印
         // ==================================================
 
         if (carPushInteraction != null)
@@ -193,7 +217,7 @@ public class DriverHelpTrigger : MonoBehaviour
 
 
         // ==================================================
-        // 6. 解锁 DriverPushPoint
+        // 6. 进入等待玩家到 DriverPushPoint
         // ==================================================
 
         carHelpManager.SetStage(
