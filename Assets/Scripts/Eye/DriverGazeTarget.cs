@@ -1,114 +1,201 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 
-public class DriverGazeTarget : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class DriverGazeTarget : MonoBehaviour
 {
-    [Header("注视设置")]
-    public float requiredGazeTime = 1f;
-    public float lostGazeResetTime = 0.5f;
-    public float maxDetectionDistance = 8f;
+    [Header("真实眼动射线")]
+    public CombinedEyeGazeRay eyeGazeRay;
 
-    [Header("玩家")]
-    public Transform playerHead;
+    [Header("Driver 根物体")]
+    [Tooltip("拖入整个 driver3 根物体")]
+    public Transform targetRoot;
+
+    [Header("纯白材质")]
+    [Tooltip("拖入 NPC_White 材质")]
+    public Material whiteMaterial;
+
+    [Header("注视设置")]
+    [Tooltip("累计注视多少秒后恢复彩色")]
+    public float requiredGazeTime = 1.0f;
+
+    [Tooltip("允许短暂移开视线的最长时间")]
+    public float gazeBreakTolerance = 0.5f;
 
     [Header("调试")]
-    public bool showDebugLog = true;
+    public bool showDebugLog = false;
 
-    private bool pointerOnNPC = false;
-    private bool gazeCompleted = false;
+    private Renderer[] targetRenderers;
+    private Material[][] originalMaterials;
 
-    private float gazeTime = 0f;
-    private float lostGazeTime = 0f;
+    private float gazeTimer = 0f;
+    private float lookAwayTimer = 0f;
 
-    public void OnPointerEnter(PointerEventData eventData)
+    private bool hasRevealedColor = false;
+    private bool initialized = false;
+
+    private void Start()
     {
-        if (gazeCompleted)
+        if (targetRoot == null)
+            targetRoot = transform;
+
+        targetRenderers =
+            targetRoot.GetComponentsInChildren<Renderer>(true);
+
+        if (targetRenderers == null ||
+            targetRenderers.Length == 0)
+        {
+            Debug.LogError(
+                "[DriverGazeTarget] 没找到 Driver 的 Renderer。"
+            );
             return;
+        }
 
-        pointerOnNPC = true;
-        lostGazeTime = 0f;
-
-        if (showDebugLog)
-            Debug.Log("[Driver Gaze] 视线进入：" + gameObject.name);
-    }
-
-    public void OnPointerExit(PointerEventData eventData)
-    {
-        if (gazeCompleted)
+        if (whiteMaterial == null)
+        {
+            Debug.LogError(
+                "[DriverGazeTarget] 没有设置 NPC_White 材质。"
+            );
             return;
+        }
 
-        pointerOnNPC = false;
-        lostGazeTime = 0f;
+        SaveOriginalMaterials();
+        ApplyWhiteMaterial();
 
-        if (showDebugLog)
-            Debug.Log("[Driver Gaze] 视线离开：" + gameObject.name);
+        gazeTimer = 0f;
+        lookAwayTimer = 0f;
+        hasRevealedColor = false;
+        initialized = true;
     }
 
     private void Update()
     {
-        if (gazeCompleted || playerHead == null)
+        if (!initialized)
             return;
 
-        float distance = Vector3.Distance(
-            playerHead.position,
-            transform.position
-        );
-
-        // 超过有效检测距离，不计算注视
-        if (distance > maxDetectionDistance)
-        {
-            ResetGaze();
+        if (hasRevealedColor)
             return;
-        }
 
-        // 正在注视 Driver
-        if (pointerOnNPC)
+        if (eyeGazeRay == null)
+            return;
+
+        bool lookingAtDriver = IsLookingAtDriver();
+
+        if (lookingAtDriver)
         {
-            lostGazeTime = 0f;
-            gazeTime += Time.deltaTime;
+            lookAwayTimer = 0f;
+            gazeTimer += Time.deltaTime;
 
-            if (gazeTime >= requiredGazeTime)
+            if (showDebugLog)
             {
-                GazeCompleted();
+                Debug.Log(
+                    "[DriverGazeTarget] 注视：" +
+                    gazeTimer.ToString("F2") +
+                    " / " +
+                    requiredGazeTime.ToString("F2")
+                );
             }
-        }
-        // 视线暂时离开
-        else if (gazeTime > 0f)
-        {
-            lostGazeTime += Time.deltaTime;
 
-            // 离开超过 0.5 秒才清零
-            if (lostGazeTime >= lostGazeResetTime)
+            if (gazeTimer >= requiredGazeTime)
+                RevealColor();
+        }
+        else
+        {
+            lookAwayTimer += Time.deltaTime;
+
+            if (lookAwayTimer > gazeBreakTolerance)
             {
-                ResetGaze();
+                gazeTimer = 0f;
+                lookAwayTimer = 0f;
             }
         }
     }
 
-    private void GazeCompleted()
+    private bool IsLookingAtDriver()
     {
-        gazeCompleted = true;
-        gazeTime = requiredGazeTime;
+        if (!eyeGazeRay.HasHit)
+            return false;
+
+        Collider hitCollider =
+            eyeGazeRay.CurrentHit.collider;
+
+        if (hitCollider == null)
+            return false;
+
+        Transform hitTransform =
+            hitCollider.transform;
+
+        if (hitTransform == targetRoot)
+            return true;
+
+        if (hitTransform.IsChildOf(targetRoot))
+            return true;
+
+        return false;
+    }
+
+    private void SaveOriginalMaterials()
+    {
+        originalMaterials =
+            new Material[targetRenderers.Length][];
+
+        for (int i = 0; i < targetRenderers.Length; i++)
+        {
+            Material[] materials =
+                targetRenderers[i].materials;
+
+            originalMaterials[i] =
+                new Material[materials.Length];
+
+            for (int j = 0; j < materials.Length; j++)
+                originalMaterials[i][j] = materials[j];
+        }
+    }
+
+    private void ApplyWhiteMaterial()
+    {
+        for (int i = 0; i < targetRenderers.Length; i++)
+        {
+            Material[] currentMaterials =
+                targetRenderers[i].materials;
+
+            Material[] whiteMaterials =
+                new Material[currentMaterials.Length];
+
+            for (int j = 0; j < whiteMaterials.Length; j++)
+                whiteMaterials[j] = whiteMaterial;
+
+            targetRenderers[i].materials =
+                whiteMaterials;
+        }
+    }
+
+    private void RevealColor()
+    {
+        if (hasRevealedColor)
+            return;
+
+        hasRevealedColor = true;
+
+        for (int i = 0; i < targetRenderers.Length; i++)
+        {
+            targetRenderers[i].materials =
+                originalMaterials[i];
+
+        }
 
         Debug.Log(
-            "========== DRIVER GAZE SUCCESS ==========\n" +
-            "真正注视到 Driver：" + gameObject.name + "\n" +
-            "累计注视时间：" + requiredGazeTime + " 秒"
+            "[DriverGazeTarget] 注视完成，Driver 恢复彩色。"
         );
-
-        // 下一步：
-        // Driver 黑白 -> 彩色
     }
 
-    private void ResetGaze()
+    public void ResetToWhite()
     {
-        if (gazeTime > 0f && showDebugLog)
-        {
-            Debug.Log("[Driver Gaze] 注视中断超过 0.5 秒，重新计时");
-        }
+        if (!initialized)
+            return;
 
-        gazeTime = 0f;
-        lostGazeTime = 0f;
-        pointerOnNPC = false;
+        gazeTimer = 0f;
+        lookAwayTimer = 0f;
+        hasRevealedColor = false;
+
+        ApplyWhiteMaterial();
     }
 }
