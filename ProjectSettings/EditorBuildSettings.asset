@@ -5,12 +5,18 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Menu.unity
     guid: 7a79d6e7a2ec02845bc569a511eca1fb
+  - enabled: 0
+    path: Assets/Scenes/EyeTrackingTest.unity
+    guid: 243d1028b2bc9a141902e7511ba8f6d3
+  - enabled: 1
+    path: Assets/Samples/VIVE OpenXR Plugin/2.5.1/VIVE OpenXR Samples/Samples/EyeTracker/EyeTracker.unity
+    guid: 2344ab9d663d25f4c95e72e96a84ad49
   m_configObjects:
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: b4243b57b40390349bdec7399781d130,
       type: 2}

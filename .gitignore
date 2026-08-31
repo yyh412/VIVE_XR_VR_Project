@@ -73,3 +73,5 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+Assets/Samples/VIVE OpenXR Plugin/2.5.1/VIVE OpenXR Samples/Samples/SceneUnderstanding/
+Assets/Samples/VIVE OpenXR Plugin/2.5.1/VIVE OpenXR Samples/Samples/SceneUnderstanding.meta
