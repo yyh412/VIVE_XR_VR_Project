@@ -48,6 +48,15 @@ public class CarPushInteraction : MonoBehaviour
 
 
     // ======================================================
+    // 背景音乐
+    // ======================================================
+
+    [Header("背景音乐")]
+    [Tooltip("拖入 BackgroundMusic 上的 BackgroundMusicManager")]
+    public BackgroundMusicManager backgroundMusicManager;
+
+
+    // ======================================================
     // 手
     // ======================================================
 
@@ -157,10 +166,14 @@ public class CarPushInteraction : MonoBehaviour
 
 
         // 只有 ReadyToPush / Pushing 才允许推
-        if (!carHelpManager.IsStage(
-                CarHelpManager.CarHelpStage.ReadyToPush) &&
+        if (
             !carHelpManager.IsStage(
-                CarHelpManager.CarHelpStage.Pushing))
+                CarHelpManager.CarHelpStage.ReadyToPush
+            ) &&
+            !carHelpManager.IsStage(
+                CarHelpManager.CarHelpStage.Pushing
+            )
+        )
         {
             return;
         }
@@ -231,8 +244,10 @@ public class CarPushInteraction : MonoBehaviour
             // 连续推满2秒
             // ==================================================
 
-            if (pushTimer >= encourageDelay &&
-                !encourageTriggered)
+            if (
+                pushTimer >= encourageDelay &&
+                !encourageTriggered
+            )
             {
                 encourageTriggered = true;
 
@@ -246,8 +261,10 @@ public class CarPushInteraction : MonoBehaviour
 
         else
         {
-            if (handIsOnTarget &&
-                !pushFinished)
+            if (
+                handIsOnTarget &&
+                !pushFinished
+            )
             {
                 ResetPush();
             }
@@ -275,13 +292,37 @@ public class CarPushInteraction : MonoBehaviour
 
 
         // 播放 Second
-        if (driverAudioSource != null &&
-            secondVoiceClip != null)
+        if (
+            driverAudioSource != null &&
+            secondVoiceClip != null
+        )
         {
             driverAudioSource.Stop();
 
             driverAudioSource.clip =
                 secondVoiceClip;
+
+
+            // ==================================================
+            // Driver开始说 Keep pushing
+            // → 背景音乐降低
+            // ==================================================
+
+            if (backgroundMusicManager != null)
+            {
+                backgroundMusicManager.LowerMusic();
+
+                Debug.Log(
+                    "Driver开始 Keep pushing → 背景音乐降低"
+                );
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "CarPushInteraction 没有设置 Background Music Manager"
+                );
+            }
+
 
             driverAudioSource.Play();
 
@@ -317,13 +358,20 @@ public class CarPushInteraction : MonoBehaviour
     // 等 Second 完整播放结束
     // → 播放 Sigh
     // → 立即进入 Push Stop
+    // → 等 Sigh 完整播放结束
+    // → 恢复背景音乐
     // ======================================================
 
     private IEnumerator PlaySighAfterSecond()
     {
-        // 等 Second 播完
-        while (driverAudioSource != null &&
-               driverAudioSource.isPlaying)
+        // ==================================================
+        // 1. 等 Second 播完
+        // ==================================================
+
+        while (
+            driverAudioSource != null &&
+            driverAudioSource.isPlaying
+        )
         {
             // 如果玩家这时候松手
             // ResetPush 会停止这个 Coroutine
@@ -334,7 +382,10 @@ public class CarPushInteraction : MonoBehaviour
         // 玩家已经松手
         if (!handIsOnTarget)
         {
+            RestoreBackgroundMusic();
+
             sighCoroutine = null;
+
             yield break;
         }
 
@@ -342,22 +393,32 @@ public class CarPushInteraction : MonoBehaviour
         // 已经进入成功流程
         if (pushFinished)
         {
+            RestoreBackgroundMusic();
+
             sighCoroutine = null;
+
             yield break;
         }
 
 
-        // =========================================
-        // 播放 Sigh
-        // =========================================
+        // ==================================================
+        // 2. 播放 Sigh
+        // ==================================================
 
-        if (driverAudioSource != null &&
-            sighVoiceClip != null)
+        bool sighStarted = false;
+
+
+        if (
+            driverAudioSource != null &&
+            sighVoiceClip != null
+        )
         {
             driverAudioSource.clip =
                 sighVoiceClip;
 
             driverAudioSource.Play();
+
+            sighStarted = true;
 
 
             Debug.Log(
@@ -372,13 +433,43 @@ public class CarPushInteraction : MonoBehaviour
         }
 
 
-        // =========================================
-        // Sigh 开始的同时进入 Push Stop
-        // =========================================
+        // ==================================================
+        // 3. Sigh 开始的同时进入 Push Stop
+        // ==================================================
 
         pushFinished = true;
 
         PushSucceeded();
+
+
+        // ==================================================
+        // 4. 等 Sigh 真正播放完
+        // ==================================================
+
+        if (
+            sighStarted &&
+            driverAudioSource != null
+        )
+        {
+            while (driverAudioSource.isPlaying)
+            {
+                yield return null;
+            }
+        }
+
+
+        // ==================================================
+        // 5. Sigh 播完
+        // → 背景音乐恢复
+        // ==================================================
+
+        RestoreBackgroundMusic();
+
+
+        Debug.Log(
+            "Driver Sigh结束 → 背景音乐恢复"
+        );
+
 
         sighCoroutine = null;
     }
@@ -396,9 +487,7 @@ public class CarPushInteraction : MonoBehaviour
 
 
         // ==================================================
-        // ★ 新增：
         // 玩家已经真正帮助推车成功
-        //
         // 此时关闭所有地面黄色箭头
         // 之后只保留你现有的蓝色脚印上车引导
         // ==================================================
@@ -502,8 +591,10 @@ public class CarPushInteraction : MonoBehaviour
             return;
 
 
-        if (leftNear &&
-            leftController != null)
+        if (
+            leftNear &&
+            leftController != null
+        )
         {
             leftController.SendHapticImpulse(
                 hapticStrength,
@@ -512,8 +603,10 @@ public class CarPushInteraction : MonoBehaviour
         }
 
 
-        if (rightNear &&
-            rightController != null)
+        if (
+            rightNear &&
+            rightController != null
+        )
         {
             rightController.SendHapticImpulse(
                 hapticStrength,
@@ -565,7 +658,10 @@ public class CarPushInteraction : MonoBehaviour
         pushFinished = false;
 
 
+        // ==================================================
         // 停止 Second / Sigh
+        // ==================================================
+
         if (driverAudioSource != null)
         {
             driverAudioSource.Stop();
@@ -583,6 +679,14 @@ public class CarPushInteraction : MonoBehaviour
         }
 
 
+        // ==================================================
+        // 中途松手
+        // → 背景音乐恢复
+        // ==================================================
+
+        RestoreBackgroundMusic();
+
+
         // 红色 → 蓝色
         SetHandPrintMaterial(
             blueMaterial
@@ -597,7 +701,7 @@ public class CarPushInteraction : MonoBehaviour
 
 
         Debug.Log(
-            "手移开 → 停止语音 → 恢复蓝色 → 重新从2秒开始"
+            "手移开 → 停止语音 → 背景音乐恢复 → 恢复蓝色 → 重新从2秒开始"
         );
     }
 
@@ -678,14 +782,29 @@ public class CarPushInteraction : MonoBehaviour
 
 
     // ======================================================
+    // 背景音乐恢复
+    // ======================================================
+
+    private void RestoreBackgroundMusic()
+    {
+        if (backgroundMusicManager != null)
+        {
+            backgroundMusicManager.RestoreMusic();
+        }
+    }
+
+
+    // ======================================================
     // 蓝 / 红材质切换
     // ======================================================
 
     private void SetHandPrintMaterial(
         Material material)
     {
-        if (material == null ||
-            handPrintRenderers == null)
+        if (
+            material == null ||
+            handPrintRenderers == null
+        )
         {
             return;
         }

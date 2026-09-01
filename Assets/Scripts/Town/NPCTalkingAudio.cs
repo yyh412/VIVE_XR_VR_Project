@@ -20,6 +20,10 @@ public class NPCTalkingAudio : MonoBehaviour
     [Tooltip("拖入 MansuitColorZone")]
     public EnvironmentColorZone mansuitColorZone;
 
+    [Header("背景音乐")]
+    [Tooltip("拖入 BackgroundMusic 上的 BackgroundMusicManager")]
+    public BackgroundMusicManager backgroundMusicManager;
+
     private bool hasStartedTalking = false;
 
 
@@ -75,7 +79,28 @@ public class NPCTalkingAudio : MonoBehaviour
 
 
         // ==================================================
-        // 2. 播放 Thank You 语音
+        // 2. Mansuit开始说话
+        // → 背景音乐平滑降低
+        // ==================================================
+
+        if (backgroundMusicManager != null)
+        {
+            backgroundMusicManager.LowerMusic();
+
+            Debug.Log(
+                "Mansuit开始说话 → 背景音乐降低"
+            );
+        }
+        else
+        {
+            Debug.LogWarning(
+                "NPCTalkingAudio 没有设置 Background Music Manager"
+            );
+        }
+
+
+        // ==================================================
+        // 3. 播放 Thank You 语音
         // ==================================================
 
         if (
@@ -89,7 +114,7 @@ public class NPCTalkingAudio : MonoBehaviour
             audioSource.Play();
 
 
-            // 等语音真正播放完
+            // 等语音真正播放结束
             while (audioSource.isPlaying)
             {
                 yield return null;
@@ -97,7 +122,8 @@ public class NPCTalkingAudio : MonoBehaviour
         }
         else
         {
-            // 没有语音时的备用等待时间
+            // 如果没有语音
+            // 使用2秒备用等待时间
             yield return new WaitForSeconds(
                 2f
             );
@@ -105,7 +131,8 @@ public class NPCTalkingAudio : MonoBehaviour
 
 
         // ==================================================
-        // 3. 语音结束 → 关闭文本框
+        // 4. Thank You结束
+        // → 关闭文本框
         // ==================================================
 
         if (speechBubble != null)
@@ -119,7 +146,22 @@ public class NPCTalkingAudio : MonoBehaviour
 
 
         // ==================================================
-        // 4. Thank You 完成
+        // 5. Mansuit说话结束
+        // → 背景音乐平滑恢复
+        // ==================================================
+
+        if (backgroundMusicManager != null)
+        {
+            backgroundMusicManager.RestoreMusic();
+
+            Debug.Log(
+                "Mansuit说话结束 → 背景音乐恢复"
+            );
+        }
+
+
+        // ==================================================
+        // 6. 帮助完成
         // → Mansuit周围环境开始恢复彩色
         // ==================================================
 

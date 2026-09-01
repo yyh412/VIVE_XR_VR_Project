@@ -14,7 +14,9 @@ public class InterviewerPath : MonoBehaviour
 
         if (waypoints.Length > 0)
         {
-            agent.SetDestination(waypoints[currentPoint].position);
+            agent.SetDestination(
+                waypoints[currentPoint].position
+            );
         }
     }
 
@@ -23,15 +25,22 @@ public class InterviewerPath : MonoBehaviour
         if (waypoints.Length == 0)
             return;
 
-        // 到达当前路点
-        if (!agent.pathPending &&
-            agent.remainingDistance <= agent.stoppingDistance)
+        if (
+            !agent.pathPending &&
+            agent.remainingDistance <=
+            agent.stoppingDistance
+        )
         {
-            // 如果后面还有路点
-            if (currentPoint < waypoints.Length - 1)
+            if (
+                currentPoint <
+                waypoints.Length - 1
+            )
             {
                 currentPoint++;
-                agent.SetDestination(waypoints[currentPoint].position);
+
+                agent.SetDestination(
+                    waypoints[currentPoint].position
+                );
             }
         }
     }

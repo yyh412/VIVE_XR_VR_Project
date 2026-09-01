@@ -29,6 +29,15 @@ public class DriverSpeechBubble : MonoBehaviour
 
 
     // ======================================================
+    // 背景音乐
+    // ======================================================
+
+    [Header("背景音乐")]
+    [Tooltip("拖入 BackgroundMusic 上的 BackgroundMusicManager")]
+    public BackgroundMusicManager backgroundMusicManager;
+
+
+    // ======================================================
     // 四次字幕位置
     // ======================================================
 
@@ -95,7 +104,11 @@ public class DriverSpeechBubble : MonoBehaviour
     // ======================================================
 
     private Vector3 currentOffset;
+
     private Coroutine hideCoroutine;
+
+    // 专门等待 Driver 语音播放完成
+    private Coroutine voiceCoroutine;
 
 
     // ======================================================
@@ -172,9 +185,14 @@ public class DriverSpeechBubble : MonoBehaviour
     {
         StopHideCoroutine();
 
+
         currentOffset =
             helpOffset;
 
+
+        // --------------------------------------------------
+        // 设置字幕
+        // --------------------------------------------------
 
         if (dialogueText != null)
         {
@@ -183,21 +201,62 @@ public class DriverSpeechBubble : MonoBehaviour
         }
 
 
+        // --------------------------------------------------
+        // 显示气泡
+        // --------------------------------------------------
+
         if (bubbleVisual != null)
         {
             bubbleVisual.SetActive(true);
         }
 
 
-        if (driverAudioSource != null &&
-            firstVoiceClip != null)
+        // --------------------------------------------------
+        // 播放第一次求助语音
+        // --------------------------------------------------
+
+        if (
+            driverAudioSource != null &&
+            firstVoiceClip != null
+        )
         {
+            // 如果之前还有语音等待 Coroutine
+            // 先停止
+            StopVoiceCoroutine();
+
+
             driverAudioSource.Stop();
 
             driverAudioSource.clip =
                 firstVoiceClip;
 
+
+            // Driver 开始说话
+            // → 背景音乐降低
+            if (backgroundMusicManager != null)
+            {
+                backgroundMusicManager.LowerMusic();
+
+                Debug.Log(
+                    "Driver开始说话 → 背景音乐降低"
+                );
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "DriverSpeechBubble 没有设置 Background Music Manager"
+                );
+            }
+
+
             driverAudioSource.Play();
+
+
+            // 等语音真正结束
+            voiceCoroutine =
+                StartCoroutine(
+                    WaitForDriverVoiceEnd()
+                );
 
 
             Debug.Log(
@@ -219,12 +278,49 @@ public class DriverSpeechBubble : MonoBehaviour
 
 
     // ======================================================
+    // 等 Driver 语音真正播放结束
+    // ======================================================
+
+    private IEnumerator WaitForDriverVoiceEnd()
+    {
+        if (driverAudioSource == null)
+        {
+            voiceCoroutine = null;
+            yield break;
+        }
+
+
+        // 等待语音真正播放完成
+        while (driverAudioSource.isPlaying)
+        {
+            yield return null;
+        }
+
+
+        // Driver 说完
+        // → 背景音乐恢复
+        if (backgroundMusicManager != null)
+        {
+            backgroundMusicManager.RestoreMusic();
+
+            Debug.Log(
+                "Driver说话结束 → 背景音乐恢复"
+            );
+        }
+
+
+        voiceCoroutine = null;
+    }
+
+
+    // ======================================================
     // 第二次：Keep pushing
     // ======================================================
 
     public void ShowEncourageMessage()
     {
         StopHideCoroutine();
+
 
         currentOffset =
             encourageOffset;
@@ -265,6 +361,7 @@ public class DriverSpeechBubble : MonoBehaviour
     {
         StopHideCoroutine();
 
+
         currentOffset =
             thankOffset;
 
@@ -296,6 +393,7 @@ public class DriverSpeechBubble : MonoBehaviour
     {
         StopHideCoroutine();
 
+
         currentOffset =
             goodLuckOffset;
 
@@ -326,6 +424,7 @@ public class DriverSpeechBubble : MonoBehaviour
     public void HideBubble()
     {
         StopHideCoroutine();
+
 
         if (bubbleVisual != null)
         {
@@ -368,6 +467,23 @@ public class DriverSpeechBubble : MonoBehaviour
             );
 
             hideCoroutine = null;
+        }
+    }
+
+
+    // ======================================================
+    // 停止之前的语音等待 Coroutine
+    // ======================================================
+
+    private void StopVoiceCoroutine()
+    {
+        if (voiceCoroutine != null)
+        {
+            StopCoroutine(
+                voiceCoroutine
+            );
+
+            voiceCoroutine = null;
         }
     }
 }
