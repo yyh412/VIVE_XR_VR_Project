@@ -68687,10 +68687,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   countdownText: {fileID: 677521575}
-  totalTime: 600
+  totalTime: 420
   finalMinuteAudio: {fileID: 496154159}
   normalColor: {r: 1, g: 0.93001294, b: 0.17295581, a: 1}
   warningColor: {r: 1, g: 0, b: 0, a: 1}
+  countdownStarted: 1
 --- !u!1 &430908909 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -795305836171604182, guid: 1dd9343db6413d345a8893377c7d10cd,
@@ -107571,7 +107572,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 10:00
+  m_text: 07:00
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

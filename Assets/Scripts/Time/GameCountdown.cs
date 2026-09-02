@@ -1,6 +1,5 @@
 using UnityEngine;
 using TMPro;
-using UnityEngine.SceneManagement;
 
 public class GameCountdown : MonoBehaviour
 {
@@ -21,62 +20,80 @@ public class GameCountdown : MonoBehaviour
     [Header("最后一分钟颜色")]
     public Color warningColor = Color.red;
 
-    private float remainingTime;
-    private bool finalMinuteStarted = false;
-    private bool finished = false;
+    [Header("是否开始倒计时")]
+    public bool countdownStarted = true;
 
+
+    // =====================================================
+    // 跨场景保存的数据
+    // =====================================================
+
+    private static float sharedRemainingTime;
+
+    private static bool timerInitialized = false;
+
+    private static bool timerFinished = false;
+
+    private static bool finalMinuteStarted = false;
+
+
+    // =====================================================
+    // 给其他脚本读取
+    // =====================================================
 
     public float RemainingTime
     {
-        get { return remainingTime; }
+        get { return sharedRemainingTime; }
     }
 
     public bool IsFinished
     {
-        get { return finished; }
+        get { return timerFinished; }
     }
 
+
+    // =====================================================
+    // Awake
+    // =====================================================
 
     private void Awake()
     {
-        // 已经存在一个计时器，就删除新场景重复的那个
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
+        // 当前场景里的 GameCountdown
         Instance = this;
-
-        // 整个 GameCountdown 对象跨场景存在
-        DontDestroyOnLoad(gameObject);
     }
 
+
+    // =====================================================
+    // Start
+    // =====================================================
 
     private void Start()
     {
-        // 只会在第一次创建这个计时器时执行
-        remainingTime = totalTime;
+        // 只有第一次进入游戏时才从7分钟开始
+        if (!timerInitialized)
+        {
+            sharedRemainingTime = totalTime;
 
+            timerInitialized = true;
+
+            timerFinished = false;
+
+            finalMinuteStarted = false;
+        }
+
+        // 当前场景自己的音乐
         if (finalMinuteAudio != null)
         {
             finalMinuteAudio.Stop();
+
             finalMinuteAudio.playOnAwake = false;
         }
 
-        UpdateDisplay();
-    }
-
-
-    private void Update()
-    {
-        if (finished)
-            return;
-
-        remainingTime -= Time.deltaTime;
-
-        // 最后一分钟
-        if (remainingTime <= 60f && !finalMinuteStarted)
+        // 如果切换到 Office 时已经进入最后一分钟
+        // Office 的 AudioSource 继续播放警告音乐
+        if (sharedRemainingTime <= 60f &&
+            sharedRemainingTime > 0f &&
+            !timerFinished)
         {
             finalMinuteStarted = true;
 
@@ -86,11 +103,51 @@ public class GameCountdown : MonoBehaviour
             }
         }
 
-        // 到 0
-        if (remainingTime <= 0f)
+        UpdateDisplay();
+    }
+
+
+    // =====================================================
+    // Update
+    // =====================================================
+
+    private void Update()
+    {
+        if (!countdownStarted)
+            return;
+
+        if (timerFinished)
+            return;
+
+
+        sharedRemainingTime -= Time.deltaTime;
+
+
+        // =================================================
+        // 最后一分钟
+        // =================================================
+
+        if (sharedRemainingTime <= 60f &&
+            !finalMinuteStarted)
         {
-            remainingTime = 0f;
-            finished = true;
+            finalMinuteStarted = true;
+
+            if (finalMinuteAudio != null)
+            {
+                finalMinuteAudio.Play();
+            }
+        }
+
+
+        // =================================================
+        // 时间归零
+        // =================================================
+
+        if (sharedRemainingTime <= 0f)
+        {
+            sharedRemainingTime = 0f;
+
+            timerFinished = true;
 
             if (finalMinuteAudio != null)
             {
@@ -98,51 +155,70 @@ public class GameCountdown : MonoBehaviour
             }
         }
 
+
         UpdateDisplay();
     }
 
+
+    // =====================================================
+    // 更新文字
+    // =====================================================
 
     private void UpdateDisplay()
     {
         if (countdownText == null)
             return;
 
-        int totalSeconds = Mathf.CeilToInt(remainingTime);
 
-        int minutes = totalSeconds / 60;
-        int seconds = totalSeconds % 60;
+        int totalSeconds =
+            Mathf.CeilToInt(sharedRemainingTime);
+
+        int minutes =
+            totalSeconds / 60;
+
+        int seconds =
+            totalSeconds % 60;
+
 
         countdownText.text =
-            string.Format("{0:00}:{1:00}", minutes, seconds);
+            string.Format(
+                "{0:00}:{1:00}",
+                minutes,
+                seconds
+            );
 
-        if (remainingTime <= 60f)
+
+        // 最后一分钟改变颜色
+        if (sharedRemainingTime <= 60f)
         {
-            countdownText.color = warningColor;
+            countdownText.color =
+                warningColor;
         }
         else
         {
-            countdownText.color = normalColor;
+            countdownText.color =
+                normalColor;
         }
     }
 
 
-    // Office 场景如果有新的 TMP 倒计时文字
-    public void SetCountdownText(TMP_Text newText)
-    {
-        countdownText = newText;
-        UpdateDisplay();
-    }
-
+    // =====================================================
+    // 判断是否按时到达
+    // =====================================================
 
     public bool ArrivedOnTime()
     {
-        return remainingTime > 0f;
+        return sharedRemainingTime > 0f;
     }
 
 
+    // =====================================================
+    // 最终结算：停止倒计时
+    // =====================================================
+
     public void StopCountdown()
     {
-        finished = true;
+        timerFinished = true;
 
         if (finalMinuteAudio != null)
         {
@@ -150,5 +226,44 @@ public class GameCountdown : MonoBehaviour
         }
 
         UpdateDisplay();
+    }
+
+
+    // =====================================================
+    // 暂停
+    // =====================================================
+
+    public void PauseCountdown()
+    {
+        countdownStarted = false;
+    }
+
+
+    // =====================================================
+    // 继续
+    // =====================================================
+
+    public void ResumeCountdown()
+    {
+        if (!timerFinished)
+        {
+            countdownStarted = true;
+        }
+    }
+
+
+    // =====================================================
+    // 开始新游戏时重置
+    // =====================================================
+
+    public static void ResetCountdown()
+    {
+        sharedRemainingTime = 0f;
+
+        timerInitialized = false;
+
+        timerFinished = false;
+
+        finalMinuteStarted = false;
     }
 }
