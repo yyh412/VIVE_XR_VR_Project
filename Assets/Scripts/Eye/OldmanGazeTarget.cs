@@ -54,6 +54,15 @@ public class OldmanGazeTarget : MonoBehaviour
 
 
     // ======================================================
+    // 箱子任务
+    // ======================================================
+
+    [Header("箱子任务")]
+    [Tooltip("拖入场景里的 BoxTaskManager")]
+    public BoxTaskManager boxTaskManager;
+
+
+    // ======================================================
     // 注视设置
     // ======================================================
 
@@ -555,6 +564,29 @@ public class OldmanGazeTarget : MonoBehaviour
         if (speechBubble != null)
         {
             speechBubble.SetActive(false);
+        }
+
+
+        // ==================================================
+        // 老人说完话以后，开始两个箱子的搬运任务
+        // ==================================================
+
+        if (boxTaskManager != null)
+        {
+            boxTaskManager.BeginBoxTask();
+
+            if (showDebugLog)
+            {
+                Debug.Log(
+                    "[OldmanGazeTarget] 老人说完话，两个箱子任务开始。"
+                );
+            }
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[OldmanGazeTarget] BoxTaskManager 没有拖入。"
+            );
         }
 
 
