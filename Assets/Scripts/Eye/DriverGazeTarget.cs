@@ -3,20 +3,77 @@ using UnityEngine;
 
 public class DriverGazeTarget : MonoBehaviour
 {
-    [Header("真实眼动射线")]
+    // =====================================================
+    // 模式
+    // =====================================================
+
+    [Header("控制模式")]
+    [Tooltip("勾选 = 电脑鼠标模式；不勾选 = VR真实眼动模式")]
+    public bool desktopMode = true;
+
+
+    // =====================================================
+    // VR真实眼动
+    // =====================================================
+
+    [Header("VR真实眼动射线")]
     public CombinedEyeGazeRay eyeGazeRay;
+
+
+    // =====================================================
+    // Desktop鼠标视线
+    // =====================================================
+
+    [Header("电脑鼠标视线")]
+    [Tooltip("拖入 XR Origin > Camera Offset > Main Camera")]
+    public Camera desktopCamera;
+
+    [Tooltip("拖入 DesktopGazeCanvas 上的 DesktopMouseGaze")]
+    public DesktopMouseGaze desktopMouseGaze;
+
+    [Tooltip("电脑视线最远检测距离")]
+    public float desktopRayDistance = 100f;
+
+
+    // =====================================================
+    // Driver流程
+    // =====================================================
 
     [Header("Driver 求助流程")]
     [Tooltip("拖入 HelpTrigger 上面的 DriverHelpTrigger")]
     public DriverHelpTrigger driverHelpTrigger;
 
+
+    // =====================================================
+    // Desktop Driver E
+    // =====================================================
+
+    [Header("电脑模式 Driver E 帮助")]
+    [Tooltip("拖入 XR Origin 上的 DriverDesktopHelpShortcut")]
+    public DriverDesktopHelpShortcut driverDesktopHelpShortcut;
+
+
+    // =====================================================
+    // 注视目标
+    // =====================================================
+
     [Header("允许触发这个事件的目标")]
     [Tooltip("例如 driver3、car、mud")]
     public Transform[] gazeTargets;
 
+
+    // =====================================================
+    // 恢复彩色
+    // =====================================================
+
     [Header("恢复彩色的根物体")]
     [Tooltip("看满1秒后，这些物体一起恢复彩色")]
     public Transform[] colorRoots;
+
+
+    // =====================================================
+    // 灰度材质
+    // =====================================================
 
     [Header("三种灰度材质")]
     public Material grayDark;
@@ -32,14 +89,31 @@ public class DriverGazeTarget : MonoBehaviour
     [Header("浅灰部件")]
     public Renderer[] lightRenderers;
 
+
+    // =====================================================
+    // 注视设置
+    // =====================================================
+
     [Header("注视设置")]
     public float requiredGazeTime = 1.0f;
 
     public float gazeBreakTolerance = 0.5f;
 
+
+    // =====================================================
+    // 调试
+    // =====================================================
+
     [Header("调试")]
     public bool showDebugLog = false;
 
+    [Tooltip("在Scene窗口显示电脑模式的视线")]
+    public bool showDesktopRay = true;
+
+
+    // =====================================================
+    // 内部变量
+    // =====================================================
 
     private Renderer[] allColorRenderers;
     private Material[][] originalMaterials;
@@ -50,6 +124,10 @@ public class DriverGazeTarget : MonoBehaviour
     private bool hasRevealedColor = false;
     private bool initialized = false;
 
+
+    // =====================================================
+    // Start
+    // =====================================================
 
     private void Start()
     {
@@ -77,15 +155,16 @@ public class DriverGazeTarget : MonoBehaviour
     }
 
 
+    // =====================================================
+    // Update
+    // =====================================================
+
     private void Update()
     {
         if (!initialized)
             return;
 
         if (hasRevealedColor)
-            return;
-
-        if (eyeGazeRay == null)
             return;
 
 
@@ -136,6 +215,101 @@ public class DriverGazeTarget : MonoBehaviour
 
     private bool IsLookingAtEvent()
     {
+        // =================================================
+        // Desktop模式
+        // =================================================
+
+        if (desktopMode)
+        {
+            return IsDesktopLookingAtEvent();
+        }
+
+
+        // =================================================
+        // VR真实眼动模式
+        // =================================================
+
+        return IsVRLookingAtEvent();
+    }
+
+
+    // =====================================================
+    // Desktop鼠标视线检测
+    // =====================================================
+
+    private bool IsDesktopLookingAtEvent()
+    {
+        if (desktopCamera == null)
+            return false;
+
+        if (desktopMouseGaze == null)
+            return false;
+
+
+        // 获取虚拟鼠标小点在屏幕上的位置
+        Vector2 screenPosition =
+            desktopMouseGaze.GetGazeScreenPosition();
+
+
+        // 从Camera穿过这个屏幕位置发射射线
+        Ray ray =
+            desktopCamera.ScreenPointToRay(
+                screenPosition
+            );
+
+
+        // Scene窗口显示射线
+        if (showDesktopRay)
+        {
+            Debug.DrawRay(
+                ray.origin,
+                ray.direction * desktopRayDistance,
+                Color.green
+            );
+        }
+
+
+        RaycastHit hit;
+
+
+        if (!Physics.Raycast(
+                ray,
+                out hit,
+                desktopRayDistance))
+        {
+            return false;
+        }
+
+
+        if (hit.collider == null)
+            return false;
+
+
+        Transform hitTransform =
+            hit.collider.transform;
+
+
+        if (showDebugLog)
+        {
+            Debug.Log(
+                "[Desktop Gaze] 当前看到：" +
+                hitTransform.name
+            );
+        }
+
+
+        return IsTargetTransform(
+            hitTransform
+        );
+    }
+
+
+    // =====================================================
+    // VR真实眼动检测
+    // =====================================================
+
+    private bool IsVRLookingAtEvent()
+    {
         if (eyeGazeRay == null)
             return false;
 
@@ -155,6 +329,22 @@ public class DriverGazeTarget : MonoBehaviour
             hitCollider.transform;
 
 
+        return IsTargetTransform(
+            hitTransform
+        );
+    }
+
+
+    // =====================================================
+    // 判断碰到的物体是不是 gazeTargets
+    // =====================================================
+
+    private bool IsTargetTransform(
+        Transform hitTransform)
+    {
+        if (hitTransform == null)
+            return false;
+
         if (gazeTargets == null)
             return false;
 
@@ -171,10 +361,12 @@ public class DriverGazeTarget : MonoBehaviour
                 continue;
 
 
+            // 直接碰到目标
             if (hitTransform == target)
                 return true;
 
 
+            // 碰到目标下面的Collider
             if (hitTransform.IsChildOf(target))
                 return true;
         }
@@ -362,7 +554,10 @@ public class DriverGazeTarget : MonoBehaviour
         hasRevealedColor = true;
 
 
-        // 1. Driver + Car + Mud 恢复彩色
+        // ==================================================
+        // Driver + Car + Mud恢复彩色
+        // ==================================================
+
         for (int i = 0;
              i < allColorRenderers.Length;
              i++)
@@ -381,19 +576,40 @@ public class DriverGazeTarget : MonoBehaviour
         );
 
 
-        // 2. 同时启动 Driver 求助流程
+        // ==================================================
+        // 原来的Driver求助流程
+        // ==================================================
+
         if (driverHelpTrigger != null)
         {
             driverHelpTrigger.TriggerHelp();
 
             Debug.Log(
-                "[DriverGazeTarget] 眼动成功 → 启动 Driver Talking。"
+                "[DriverGazeTarget] 注视成功 → 启动 Driver Talking。"
             );
         }
         else
         {
             Debug.LogWarning(
                 "[DriverGazeTarget] 没有设置 Driver Help Trigger。"
+            );
+        }
+
+
+        // ==================================================
+        // Desktop模式：
+        // Driver恢复彩色以后，解锁Driver自己的E
+        // ==================================================
+
+        if (
+            desktopMode &&
+            driverDesktopHelpShortcut != null
+        )
+        {
+            driverDesktopHelpShortcut.ShowHelpHint();
+
+            Debug.Log(
+                "[DriverGazeTarget] Driver恢复彩色 → 解锁Driver的E。"
             );
         }
     }

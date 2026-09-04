@@ -141,13 +141,10 @@ public class MovableBoxTask : MonoBehaviour
         if (placed)
             return;
 
-        // 如果正确 Socket 正在抓这个箱子，
-        // 就不要重新打开呼吸灯
-        if (socket != null &&
-            socket.hasSelection)
-        {
+        // 如果正确 Socket 已经抓住这个箱子
+        // 就不要重新打开箱子提示灯
+        if (socket != null && socket.hasSelection)
             return;
-        }
 
         if (boxGlow != null)
             boxGlow.StartGlow();
@@ -180,21 +177,14 @@ public class MovableBoxTask : MonoBehaviour
         if (grabInteractable == null)
             return;
 
-
         IXRSelectInteractable enteredInteractable =
             args.interactableObject;
-
 
         if (enteredInteractable == null)
             return;
 
-
-        // =================================================
-        // 非常重要：
-        // 必须确认进入这个 Socket 的
-        // 就是“我自己这个箱子”
-        // =================================================
-
+        // 必须确认进入 Socket 的
+        // 就是这个箱子自己
         if (enteredInteractable !=
             (IXRSelectInteractable)grabInteractable)
         {
@@ -207,22 +197,114 @@ public class MovableBoxTask : MonoBehaviour
             return;
         }
 
+        CompleteBox();
+    }
 
-        // =================================================
-        // 正确箱子进入正确 Socket
-        // =================================================
+
+    // =====================================================
+    // Keyboard 模式
+    // 按 E 后自动完成这个箱子
+    // =====================================================
+
+    public void DesktopCompleteBox()
+    {
+        if (placed)
+            return;
+
+        taskStarted = true;
+
+        CompleteBox();
+
+        Debug.Log(
+            "[MovableBoxTask] Keyboard 自动完成：" +
+            gameObject.name
+        );
+    }
+
+
+    // =====================================================
+    // 公共完成逻辑
+    // VR 和 Keyboard 都走这里
+    // =====================================================
+
+    private void CompleteBox()
+    {
+        if (placed)
+            return;
 
         placed = true;
 
 
+        // =================================================
+        // 停止箱子发光
+        // =================================================
+
         if (boxGlow != null)
             boxGlow.StopGlow();
+
+
+        // =================================================
+        // 停止目标位置发光
+        // =================================================
 
         if (targetGlow != null)
             targetGlow.SetActive(false);
 
 
-        // 停止箱子物理运动
+        // =================================================
+        // 先停止 Rigidbody
+        // =================================================
+
+        if (rb != null)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+
+            rb.useGravity = false;
+            rb.isKinematic = true;
+        }
+
+
+        // =================================================
+        // 强制固定到对应 Socket
+        // =================================================
+
+        if (socket != null)
+        {
+            Transform targetTransform =
+                socket.attachTransform;
+
+            if (targetTransform != null)
+            {
+                transform.position =
+                    targetTransform.position;
+
+                transform.rotation =
+                    targetTransform.rotation;
+            }
+            else
+            {
+                transform.position =
+                    socket.transform.position;
+
+                transform.rotation =
+                    socket.transform.rotation;
+            }
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[MovableBoxTask] " +
+                gameObject.name +
+                " 没有设置 Socket。"
+            );
+        }
+
+
+        // =================================================
+        // 再次清理速度
+        // =================================================
+
         if (rb != null)
         {
             rb.velocity = Vector3.zero;
@@ -233,13 +315,14 @@ public class MovableBoxTask : MonoBehaviour
         Debug.Log(
             "[MovableBoxTask] " +
             gameObject.name +
-            " 已进入正确的 " +
-            socket.gameObject.name +
-            "。"
+            " 已完成并固定在 Socket。"
         );
 
 
-        // 通知总任务
+        // =================================================
+        // 通知总任务管理
+        // =================================================
+
         if (taskManager != null)
         {
             taskManager.BoxCompleted(this);

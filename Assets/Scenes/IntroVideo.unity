@@ -198,7 +198,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   videoPlayer: {fileID: 538681877}
   sceneTransitionManager: {fileID: 14620746}
-  targetSceneIndex: 0
+  targetSceneIndex: 2
   startDelay: 0.5
 --- !u!4 &167486901
 Transform:

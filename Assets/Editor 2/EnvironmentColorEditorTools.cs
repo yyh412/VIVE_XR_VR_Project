@@ -1,3 +1,5 @@
+#if UNITY_EDITOR
+
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -5,10 +7,10 @@ using UnityEngine;
 public static class EnvironmentColorEditorTools
 {
     // =====================================================
-    // 标记为灰色
+    // Mark as Gray
     // =====================================================
 
-    [MenuItem("GameObject/环境颜色/标记为灰色", false, 0)]
+    [MenuItem("GameObject/Environment Color/Mark As Gray", false, 0)]
     private static void MarkAsGray()
     {
         EnvironmentColorManager manager =
@@ -17,7 +19,7 @@ public static class EnvironmentColorEditorTools
         if (manager == null)
         {
             Debug.LogError(
-                "场景里没有找到 EnvironmentColorManager。"
+                "EnvironmentColorManager was not found in the scene."
             );
             return;
         }
@@ -29,7 +31,7 @@ public static class EnvironmentColorEditorTools
             selectedObjects.Length == 0)
         {
             Debug.LogWarning(
-                "请先在 Hierarchy 里选择物体。"
+                "Please select an object in the Hierarchy first."
             );
             return;
         }
@@ -46,7 +48,7 @@ public static class EnvironmentColorEditorTools
             if (obj == null)
                 continue;
 
-            // 自动包含这个物体以及所有子物体 Renderer
+            // Include this object and all child Renderers
             Renderer[] renderers =
                 obj.GetComponentsInChildren<Renderer>(true);
 
@@ -55,10 +57,10 @@ public static class EnvironmentColorEditorTools
                 if (r == null)
                     continue;
 
-                // 如果之前在深灰列表，先移除
+                // Remove from Dark list first
                 manager.darkRenderers.Remove(r);
 
-                // 加到灰色列表
+                // Add to Gray list
                 if (!manager.grayRenderers.Contains(r))
                 {
                     manager.grayRenderers.Add(r);
@@ -70,18 +72,18 @@ public static class EnvironmentColorEditorTools
         EditorUtility.SetDirty(manager);
 
         Debug.Log(
-            "已将 " +
+            "Marked " +
             addedCount +
-            " 个 Renderer 标记为灰色。"
+            " Renderer(s) as Gray."
         );
     }
 
 
     // =====================================================
-    // 标记为深灰 / 黑色
+    // Mark as Dark
     // =====================================================
 
-    [MenuItem("GameObject/环境颜色/标记为深灰", false, 1)]
+    [MenuItem("GameObject/Environment Color/Mark As Dark", false, 1)]
     private static void MarkAsDark()
     {
         EnvironmentColorManager manager =
@@ -90,7 +92,7 @@ public static class EnvironmentColorEditorTools
         if (manager == null)
         {
             Debug.LogError(
-                "场景里没有找到 EnvironmentColorManager。"
+                "EnvironmentColorManager was not found in the scene."
             );
             return;
         }
@@ -102,7 +104,7 @@ public static class EnvironmentColorEditorTools
             selectedObjects.Length == 0)
         {
             Debug.LogWarning(
-                "请先在 Hierarchy 里选择物体。"
+                "Please select an object in the Hierarchy first."
             );
             return;
         }
@@ -127,10 +129,10 @@ public static class EnvironmentColorEditorTools
                 if (r == null)
                     continue;
 
-                // 如果之前在灰色列表，先移除
+                // Remove from Gray list first
                 manager.grayRenderers.Remove(r);
 
-                // 加到深灰列表
+                // Add to Dark list
                 if (!manager.darkRenderers.Contains(r))
                 {
                     manager.darkRenderers.Add(r);
@@ -142,19 +144,19 @@ public static class EnvironmentColorEditorTools
         EditorUtility.SetDirty(manager);
 
         Debug.Log(
-            "已将 " +
+            "Marked " +
             addedCount +
-            " 个 Renderer 标记为深灰。"
+            " Renderer(s) as Dark."
         );
     }
 
 
     // =====================================================
-    // 恢复为默认白色
-    // 其实就是从两个列表里移除
+    // Restore to Default White
+    // Removes Renderer from both lists
     // =====================================================
 
-    [MenuItem("GameObject/环境颜色/恢复为默认白色", false, 2)]
+    [MenuItem("GameObject/Environment Color/Restore Default White", false, 2)]
     private static void MarkAsWhite()
     {
         EnvironmentColorManager manager =
@@ -163,7 +165,7 @@ public static class EnvironmentColorEditorTools
         if (manager == null)
         {
             Debug.LogError(
-                "场景里没有找到 EnvironmentColorManager。"
+                "EnvironmentColorManager was not found in the scene."
             );
             return;
         }
@@ -175,7 +177,7 @@ public static class EnvironmentColorEditorTools
             selectedObjects.Length == 0)
         {
             Debug.LogWarning(
-                "请先在 Hierarchy 里选择物体。"
+                "Please select an object in the Hierarchy first."
             );
             return;
         }
@@ -211,18 +213,18 @@ public static class EnvironmentColorEditorTools
         EditorUtility.SetDirty(manager);
 
         Debug.Log(
-            "已清除 " +
+            "Removed " +
             removedCount +
-            " 个颜色标记，运行时会使用默认白色。"
+            " color marker(s). They will use Default White at runtime."
         );
     }
 
 
     // =====================================================
-    // 清理列表中的空引用
+    // Clean Null References
     // =====================================================
 
-    [MenuItem("GameObject/环境颜色/清理空引用", false, 20)]
+    [MenuItem("GameObject/Environment Color/Clean Null References", false, 20)]
     private static void CleanNullReferences()
     {
         EnvironmentColorManager manager =
@@ -231,7 +233,7 @@ public static class EnvironmentColorEditorTools
         if (manager == null)
         {
             Debug.LogError(
-                "场景里没有找到 EnvironmentColorManager。"
+                "EnvironmentColorManager was not found in the scene."
             );
             return;
         }
@@ -252,7 +254,9 @@ public static class EnvironmentColorEditorTools
         EditorUtility.SetDirty(manager);
 
         Debug.Log(
-            "Gray / Dark 列表中的空引用已清理。"
+            "Null references in Gray / Dark lists have been cleaned."
         );
     }
 }
+
+#endif

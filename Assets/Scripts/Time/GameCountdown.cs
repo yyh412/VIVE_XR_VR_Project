@@ -23,6 +23,10 @@ public class GameCountdown : MonoBehaviour
     [Header("是否开始倒计时")]
     public bool countdownStarted = true;
 
+    [Header("最终结果管理")]
+    [Tooltip("拖入场景里的 InterviewResultManager")]
+    public InterviewResultManager resultManager;
+
 
     // =====================================================
     // 跨场景保存的数据
@@ -58,7 +62,6 @@ public class GameCountdown : MonoBehaviour
 
     private void Awake()
     {
-        // 当前场景里的 GameCountdown
         Instance = this;
     }
 
@@ -81,7 +84,6 @@ public class GameCountdown : MonoBehaviour
             finalMinuteStarted = false;
         }
 
-        // 当前场景自己的音乐
         if (finalMinuteAudio != null)
         {
             finalMinuteAudio.Stop();
@@ -90,7 +92,6 @@ public class GameCountdown : MonoBehaviour
         }
 
         // 如果切换到 Office 时已经进入最后一分钟
-        // Office 的 AudioSource 继续播放警告音乐
         if (sharedRemainingTime <= 60f &&
             sharedRemainingTime > 0f &&
             !timerFinished)
@@ -128,6 +129,7 @@ public class GameCountdown : MonoBehaviour
         // =================================================
 
         if (sharedRemainingTime <= 60f &&
+            sharedRemainingTime > 0f &&
             !finalMinuteStarted)
         {
             finalMinuteStarted = true;
@@ -141,6 +143,7 @@ public class GameCountdown : MonoBehaviour
 
         // =================================================
         // 时间归零
+        // 立即失败
         // =================================================
 
         if (sharedRemainingTime <= 0f)
@@ -149,10 +152,33 @@ public class GameCountdown : MonoBehaviour
 
             timerFinished = true;
 
+            countdownStarted = false;
+
             if (finalMinuteAudio != null)
             {
                 finalMinuteAudio.Stop();
             }
+
+            UpdateDisplay();
+
+            Debug.Log(
+                "[GameCountdown] 时间已到，立即 FAIL。"
+            );
+
+
+            // 通知最终结算
+            if (resultManager != null)
+            {
+                resultManager.TimeRanOut();
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[GameCountdown] InterviewResultManager 没有拖入。"
+                );
+            }
+
+            return;
         }
 
 
@@ -188,7 +214,6 @@ public class GameCountdown : MonoBehaviour
             );
 
 
-        // 最后一分钟改变颜色
         if (sharedRemainingTime <= 60f)
         {
             countdownText.color =
@@ -208,17 +233,24 @@ public class GameCountdown : MonoBehaviour
 
     public bool ArrivedOnTime()
     {
-        return sharedRemainingTime > 0f;
+        return sharedRemainingTime > 0f &&
+               !timerFinished;
     }
 
 
     // =====================================================
-    // 最终结算：停止倒计时
+    // 玩家成功到达面试
+    // 停止倒计时
     // =====================================================
 
     public void StopCountdown()
     {
+        if (timerFinished)
+            return;
+
         timerFinished = true;
+
+        countdownStarted = false;
 
         if (finalMinuteAudio != null)
         {
@@ -226,6 +258,10 @@ public class GameCountdown : MonoBehaviour
         }
 
         UpdateDisplay();
+
+        Debug.Log(
+            "[GameCountdown] 玩家按时到达，倒计时停止。"
+        );
     }
 
 

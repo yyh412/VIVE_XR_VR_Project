@@ -15,12 +15,20 @@ public class BriefcasePaperDropZone : MonoBehaviour
     public GameObject briefcaseGlowBody;
     public GameObject briefcaseGlowLid;
 
+    [Header("NPC完成帮助后的动画")]
+    [Tooltip("拖入 mansuit@Walking 上的 Animator")]
+    public Animator npcAnimator;
+
+    [Tooltip("Holding Paper Idle → Standing 使用的 Trigger")]
+    public string standUpTrigger = "StandUp";
+
     [Header("放入容错")]
     [Tooltip("纸刚离开 DropZone 后，在这段时间内松手仍然算放入")]
     public float dropGraceTime = 0.4f;
 
     [Header("调试")]
     public bool showDebugLog = true;
+
 
     private XRGrabInteractable grab01;
     private XRGrabInteractable grab02;
@@ -34,12 +42,16 @@ public class BriefcasePaperDropZone : MonoBehaviour
     private bool paper01Completed = false;
     private bool paper02Completed = false;
 
+    private bool standUpTriggered = false;
+
+
+    // =====================================================
+    // Start
+    // =====================================================
+
     private void Start()
     {
-        // =========================
         // 第一张纸
-        // =========================
-
         if (playerPaper01 != null)
         {
             grab01 =
@@ -63,10 +75,8 @@ public class BriefcasePaperDropZone : MonoBehaviour
             }
         }
 
-        // =========================
-        // 第二张纸
-        // =========================
 
+        // 第二张纸
         if (playerPaper02 != null)
         {
             grab02 =
@@ -86,15 +96,22 @@ public class BriefcasePaperDropZone : MonoBehaviour
             }
         }
 
+
         // 第二张一开始不亮
         if (paperGlow02 != null)
         {
             paperGlow02.SetActive(false);
         }
 
+
         // 公文包一开始不亮
         SetBriefcaseGlow(false);
     }
+
+
+    // =====================================================
+    // OnDestroy
+    // =====================================================
 
     private void OnDestroy()
     {
@@ -109,6 +126,7 @@ public class BriefcasePaperDropZone : MonoBehaviour
             );
         }
 
+
         if (grab02 != null)
         {
             grab02.selectExited.RemoveListener(
@@ -116,6 +134,7 @@ public class BriefcasePaperDropZone : MonoBehaviour
             );
         }
     }
+
 
     // =====================================================
     // 第一张纸被拿起
@@ -128,9 +147,9 @@ public class BriefcasePaperDropZone : MonoBehaviour
         if (paper01Completed)
             return;
 
-        // 拿起第一张以后
-        // 公文包开始发光
+
         SetBriefcaseGlow(true);
+
 
         if (showDebugLog)
         {
@@ -139,6 +158,7 @@ public class BriefcasePaperDropZone : MonoBehaviour
             );
         }
     }
+
 
     // =====================================================
     // 纸进入 DropZone
@@ -167,6 +187,7 @@ public class BriefcasePaperDropZone : MonoBehaviour
             }
         }
 
+
         // 第二张
         if (
             playerPaper02 != null &&
@@ -189,6 +210,7 @@ public class BriefcasePaperDropZone : MonoBehaviour
         }
     }
 
+
     // =====================================================
     // 纸持续停留在 DropZone
     // =====================================================
@@ -208,6 +230,7 @@ public class BriefcasePaperDropZone : MonoBehaviour
             paper01LastInsideTime = Time.time;
         }
 
+
         if (
             playerPaper02 != null &&
             !paper02Completed &&
@@ -221,6 +244,7 @@ public class BriefcasePaperDropZone : MonoBehaviour
             paper02LastInsideTime = Time.time;
         }
     }
+
 
     // =====================================================
     // 纸离开 DropZone
@@ -246,6 +270,7 @@ public class BriefcasePaperDropZone : MonoBehaviour
             }
         }
 
+
         if (
             playerPaper02 != null &&
             IsPaperCollider(
@@ -265,6 +290,7 @@ public class BriefcasePaperDropZone : MonoBehaviour
         }
     }
 
+
     // =====================================================
     // 第一张纸松手
     // =====================================================
@@ -276,10 +302,12 @@ public class BriefcasePaperDropZone : MonoBehaviour
         if (paper01Completed)
             return;
 
+
         bool canDrop =
             paper01InsideZone ||
             Time.time - paper01LastInsideTime
             <= dropGraceTime;
+
 
         if (!canDrop)
         {
@@ -293,8 +321,10 @@ public class BriefcasePaperDropZone : MonoBehaviour
             return;
         }
 
+
         CompletePaper01();
     }
+
 
     // =====================================================
     // 第二张纸松手
@@ -307,7 +337,8 @@ public class BriefcasePaperDropZone : MonoBehaviour
         if (paper02Completed)
             return;
 
-        // 第一张必须已经完成
+
+        // 第一张必须先完成
         if (!paper01Completed)
         {
             if (showDebugLog)
@@ -320,10 +351,12 @@ public class BriefcasePaperDropZone : MonoBehaviour
             return;
         }
 
+
         bool canDrop =
             paper02InsideZone ||
             Time.time - paper02LastInsideTime
             <= dropGraceTime;
+
 
         if (!canDrop)
         {
@@ -337,8 +370,10 @@ public class BriefcasePaperDropZone : MonoBehaviour
             return;
         }
 
+
         CompletePaper02();
     }
+
 
     // =====================================================
     // 第一张完成
@@ -346,7 +381,12 @@ public class BriefcasePaperDropZone : MonoBehaviour
 
     private void CompletePaper01()
     {
+        if (paper01Completed)
+            return;
+
+
         paper01Completed = true;
+
 
         if (showDebugLog)
         {
@@ -355,11 +395,13 @@ public class BriefcasePaperDropZone : MonoBehaviour
             );
         }
 
-        // 第一张灯关闭
+
+        // 第一张提示灯关闭
         if (paperGlow01 != null)
         {
             paperGlow01.SetActive(false);
         }
+
 
         // 第一张永久完成
         if (playerPaper01 != null)
@@ -369,27 +411,32 @@ public class BriefcasePaperDropZone : MonoBehaviour
                     PaperPickupGlowController
                 >();
 
+
             if (controller != null)
             {
                 controller.MarkCompleted();
             }
 
-            // 消失，模拟放入公文包
+
+            // 消失 = 已经放进公文包
             playerPaper01.SetActive(false);
         }
 
-        // 公文包继续亮
+
+        // 公文包继续发光
         SetBriefcaseGlow(true);
 
-        // 第二张开始亮
+
+        // 第二张提示灯开始亮
         if (paperGlow02 != null)
         {
             paperGlow02.SetActive(true);
         }
 
-        // 清理状态
+
         paper01InsideZone = false;
     }
+
 
     // =====================================================
     // 第二张完成
@@ -397,7 +444,12 @@ public class BriefcasePaperDropZone : MonoBehaviour
 
     private void CompletePaper02()
     {
+        if (paper02Completed)
+            return;
+
+
         paper02Completed = true;
+
 
         if (showDebugLog)
         {
@@ -406,11 +458,13 @@ public class BriefcasePaperDropZone : MonoBehaviour
             );
         }
 
-        // 第二张灯关闭
+
+        // 第二张提示灯关闭
         if (paperGlow02 != null)
         {
             paperGlow02.SetActive(false);
         }
+
 
         // 第二张永久完成
         if (playerPaper02 != null)
@@ -420,32 +474,146 @@ public class BriefcasePaperDropZone : MonoBehaviour
                     PaperPickupGlowController
                 >();
 
+
             if (controller != null)
             {
                 controller.MarkCompleted();
             }
 
-            // 消失
+
+            // 消失 = 已经放进公文包
             playerPaper02.SetActive(false);
         }
 
+
         // 两张都完成
-        // 公文包全部停止发光
+        // 公文包停止发光
         SetBriefcaseGlow(false);
 
         paper02InsideZone = false;
 
-        // ==========================================
-        // 下一步可在这里接：
-        // NPC 谢谢
-        // NPC 拿包
-        // NPC 站起来
-        // NPC 离开
-        // ==========================================
+
+        // =====================================================
+        // 新增：
+        // 记录玩家已经帮助过这个掉文件的人
+        // =====================================================
+
+        HelpRecord.HelpedMansuit = true;
+
+        Debug.Log(
+            "[HelpRecord] HelpedMansuit = TRUE"
+        );
+
+
+        // =====================================================
+        // 帮助完成
+        // Holding Paper Idle
+        // → StandUp
+        // → Standing
+        // → Talking
+        // =====================================================
+
+        TriggerNPCStandUp();
     }
 
+
     // =====================================================
-    // 控制包身 + 盖子
+    // Desktop模式快捷完成
+    // 以后按E调用这个函数
+    // =====================================================
+
+    public void DesktopCompleteAllPapers()
+    {
+        if (
+            paper01Completed &&
+            paper02Completed
+        )
+        {
+            return;
+        }
+
+
+        if (showDebugLog)
+        {
+            Debug.Log(
+                "[Desktop] 按E：直接完成文件帮助任务"
+            );
+        }
+
+
+        // 第一张直接完成
+        if (!paper01Completed)
+        {
+            CompletePaper01();
+        }
+
+
+        // 第二张直接完成
+        if (!paper02Completed)
+        {
+            CompletePaper02();
+        }
+
+
+        if (showDebugLog)
+        {
+            Debug.Log(
+                "[Desktop] 两张纸已消失，NPC开始站起来"
+            );
+        }
+    }
+
+
+    // =====================================================
+    // NPC站起来
+    // =====================================================
+
+    private void TriggerNPCStandUp()
+    {
+        if (standUpTriggered)
+            return;
+
+
+        standUpTriggered = true;
+
+
+        if (npcAnimator == null)
+        {
+            Debug.LogWarning(
+                "BriefcasePaperDropZone：NPC Animator 没有设置！"
+            );
+
+            return;
+        }
+
+
+        if (string.IsNullOrEmpty(standUpTrigger))
+        {
+            Debug.LogWarning(
+                "BriefcasePaperDropZone：StandUp Trigger 名称为空！"
+            );
+
+            return;
+        }
+
+
+        npcAnimator.SetTrigger(
+            standUpTrigger
+        );
+
+
+        if (showDebugLog)
+        {
+            Debug.Log(
+                "帮助完成 → Animator Trigger："
+                + standUpTrigger
+            );
+        }
+    }
+
+
+    // =====================================================
+    // 控制公文包发光
     // =====================================================
 
     private void SetBriefcaseGlow(bool state)
@@ -455,15 +623,16 @@ public class BriefcasePaperDropZone : MonoBehaviour
             briefcaseGlowBody.SetActive(state);
         }
 
+
         if (briefcaseGlowLid != null)
         {
             briefcaseGlowLid.SetActive(state);
         }
     }
 
+
     // =====================================================
-    // 判断 Collider 是否属于指定纸张
-    // 兼容 Collider 在纸的子物体上
+    // 判断Collider是否属于对应纸张
     // =====================================================
 
     private bool IsPaperCollider(
@@ -479,6 +648,7 @@ public class BriefcasePaperDropZone : MonoBehaviour
             return false;
         }
 
+
         if (
             other.gameObject ==
             targetPaper
@@ -487,8 +657,10 @@ public class BriefcasePaperDropZone : MonoBehaviour
             return true;
         }
 
+
         Transform current =
             other.transform;
+
 
         while (current != null)
         {
@@ -500,9 +672,11 @@ public class BriefcasePaperDropZone : MonoBehaviour
                 return true;
             }
 
+
             current =
                 current.parent;
         }
+
 
         return false;
     }

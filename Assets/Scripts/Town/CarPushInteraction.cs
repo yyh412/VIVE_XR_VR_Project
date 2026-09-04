@@ -103,6 +103,21 @@ public class CarPushInteraction : MonoBehaviour
 
 
     // ======================================================
+    // Desktop E
+    // ======================================================
+
+    [Header("电脑模式 E 推车")]
+    [Tooltip("按E以后，先播放多久Pushing再说Keep pushing")]
+    public float desktopPushingDuration = 2.0f;
+
+    [Tooltip("电脑模式进入的Pushing状态名称")]
+    public string desktopPushingStateName = "Pushing";
+
+    [Tooltip("进入Pushing状态的过渡时间")]
+    public float desktopPushingTransition = 0.05f;
+
+
+    // ======================================================
     // 震动
     // ======================================================
 
@@ -134,6 +149,13 @@ public class CarPushInteraction : MonoBehaviour
 
 
     // ======================================================
+    // Desktop内部状态
+    // ======================================================
+
+    private bool desktopPushRunning = false;
+
+
+    // ======================================================
     // Start
     // ======================================================
 
@@ -157,6 +179,15 @@ public class CarPushInteraction : MonoBehaviour
 
     private void Update()
     {
+        // ==================================================
+        // Desktop正在自动完成推车时
+        // 不再检测VR双手
+        // ==================================================
+
+        if (desktopPushRunning)
+            return;
+
+
         // 还没有到 DriverPushPoint
         if (!interactionEnabled)
             return;
@@ -269,6 +300,309 @@ public class CarPushInteraction : MonoBehaviour
                 ResetPush();
             }
         }
+    }
+
+
+    // ======================================================
+    // Desktop：
+    // Driver自己的E调用这个函数
+    //
+    // 不直接跳到Push Stop
+    // 而是继续使用原来的完整成功流程
+    // ======================================================
+
+    public void DesktopCompletePush()
+    {
+        if (desktopPushRunning)
+            return;
+
+        if (pushFinished)
+            return;
+
+
+        StartCoroutine(
+            DesktopPushSequence()
+        );
+    }
+
+
+    // ======================================================
+    // Desktop推车流程
+    //
+    // E
+    // ↓
+    // Pushing
+    // ↓
+    // Keep pushing / Second
+    // ↓
+    // Sigh
+    // ↓
+    // 原来的PushSucceeded()
+    // ↓
+    // StopPush Trigger
+    // ↓
+    // Push Stop
+    // ↓
+    // PushStopCarSync
+    // ======================================================
+
+    private IEnumerator DesktopPushSequence()
+    {
+        desktopPushRunning = true;
+
+
+        Debug.Log(
+            "[Desktop Driver] 按E → 开始推车"
+        );
+
+
+        // ==================================================
+        // 1. 关闭VR手部检测
+        // ==================================================
+
+        interactionEnabled = false;
+
+        handIsOnTarget = true;
+
+        encourageTriggered = false;
+        pushFinished = false;
+
+        pushTimer = 0f;
+
+
+        // ==================================================
+        // 2. 设置成原来的 Pushing 阶段
+        // ==================================================
+
+        if (carHelpManager != null)
+        {
+            carHelpManager.SetStage(
+                CarHelpManager.CarHelpStage.Pushing
+            );
+        }
+
+
+        // ==================================================
+        // 3. 隐藏VR手印
+        // ==================================================
+
+        if (handPrint != null)
+        {
+            handPrint.SetActive(false);
+        }
+
+
+        // ==================================================
+        // 4. Driver进入Pushing
+        //
+        // 注意：
+        // 这里只进入Pushing。
+        // 不直接CrossFade到Push Stop。
+        // ==================================================
+
+        if (driverAnimator != null)
+        {
+            driverAnimator.CrossFade(
+                desktopPushingStateName,
+                desktopPushingTransition
+            );
+
+
+            Debug.Log(
+                "[Desktop Driver] Driver进入Pushing"
+            );
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[Desktop Driver] Driver Animator没有设置！"
+            );
+        }
+
+
+        // ==================================================
+        // 5. 保持Pushing
+        // ==================================================
+
+        yield return new WaitForSeconds(
+            desktopPushingDuration
+        );
+
+
+        if (pushFinished)
+        {
+            desktopPushRunning = false;
+            yield break;
+        }
+
+
+        encourageTriggered = true;
+
+
+        // ==================================================
+        // 6. 和VR一样显示 Keep pushing
+        // ==================================================
+
+        Debug.Log(
+            "[Desktop Driver] Driver: Keep pushing!"
+        );
+
+
+        if (speechBubble != null)
+        {
+            speechBubble.ShowEncourageMessage();
+        }
+
+
+        // ==================================================
+        // 7. 播放原来的Second
+        // ==================================================
+
+        bool secondStarted = false;
+
+
+        if (
+            driverAudioSource != null &&
+            secondVoiceClip != null
+        )
+        {
+            driverAudioSource.Stop();
+
+            driverAudioSource.clip =
+                secondVoiceClip;
+
+
+            // ==============================================
+            // Driver开始说话
+            // → 原来的背景音乐降低
+            // ==============================================
+
+            if (backgroundMusicManager != null)
+            {
+                backgroundMusicManager.LowerMusic();
+
+                Debug.Log(
+                    "[Desktop Driver] Keep pushing → 背景音乐降低"
+                );
+            }
+
+
+            driverAudioSource.Play();
+
+            secondStarted = true;
+
+
+            Debug.Log(
+                "[Desktop Driver] 播放Second：Keep pushing!"
+            );
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[Desktop Driver] Second AudioSource 或 AudioClip没有设置！"
+            );
+        }
+
+
+        // ==================================================
+        // 8. 等Second完整结束
+        // ==================================================
+
+        if (
+            secondStarted &&
+            driverAudioSource != null
+        )
+        {
+            while (driverAudioSource.isPlaying)
+            {
+                yield return null;
+            }
+        }
+
+
+        // ==================================================
+        // 9. 播放原来的Sigh
+        // ==================================================
+
+        bool sighStarted = false;
+
+
+        if (
+            driverAudioSource != null &&
+            sighVoiceClip != null
+        )
+        {
+            driverAudioSource.clip =
+                sighVoiceClip;
+
+            driverAudioSource.Play();
+
+            sighStarted = true;
+
+
+            Debug.Log(
+                "[Desktop Driver] Second结束 → 开始播放Sigh"
+            );
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[Desktop Driver] Sigh AudioSource 或 AudioClip没有设置！"
+            );
+        }
+
+
+        // ==================================================
+        // 10. ★最关键
+        //
+        // Sigh开始的同时：
+        // 调用你原来的PushSucceeded()
+        //
+        // PushSucceeded不会自己移动汽车，
+        // 它只发送原来的StopPush Trigger。
+        //
+        // 后面仍然交给：
+        // Push Stop
+        // PushStopCarSync
+        //
+        // 所以汽车移动方向仍然沿用原来的。
+        // ==================================================
+
+        pushFinished = true;
+
+
+        PushSucceeded();
+
+
+        // ==================================================
+        // 11. 等Sigh完整结束
+        // ==================================================
+
+        if (
+            sighStarted &&
+            driverAudioSource != null
+        )
+        {
+            while (driverAudioSource.isPlaying)
+            {
+                yield return null;
+            }
+        }
+
+
+        // ==================================================
+        // 12. 恢复背景音乐
+        // ==================================================
+
+        RestoreBackgroundMusic();
+
+
+        Debug.Log(
+            "[Desktop Driver] Sigh结束 → 背景音乐恢复"
+        );
+
+
+        desktopPushRunning = false;
     }
 
 
@@ -487,6 +821,17 @@ public class CarPushInteraction : MonoBehaviour
 
 
         // ==================================================
+        // 记录：玩家已经帮助 Driver
+        // ==================================================
+
+        HelpRecord.HelpedDriver = true;
+
+        Debug.Log(
+            "[HelpRecord] HelpedDriver = TRUE"
+        );
+
+
+        // ==================================================
         // 玩家已经真正帮助推车成功
         // 此时关闭所有地面黄色箭头
         // 之后只保留你现有的蓝色脚印上车引导
@@ -538,7 +883,9 @@ public class CarPushInteraction : MonoBehaviour
 
 
         // ==================================================
-        // Push_InPlace → Push Stop
+        // Pushing → Push Stop
+        //
+        // ★继续使用你原来的StopPush
         // ==================================================
 
         if (driverAnimator != null)

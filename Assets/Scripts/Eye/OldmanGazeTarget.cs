@@ -4,11 +4,50 @@ using UnityEngine;
 
 public class OldmanGazeTarget : MonoBehaviour
 {
-    [Header("真实眼动射线")]
+    // ======================================================
+    // 控制模式
+    // ======================================================
+
+    [Header("控制模式")]
+    [Tooltip("勾选 = 电脑鼠标模式；不勾选 = VR真实眼动模式")]
+    public bool desktopMode = true;
+
+
+    // ======================================================
+    // VR真实眼动
+    // ======================================================
+
+    [Header("VR真实眼动射线")]
     public CombinedEyeGazeRay eyeGazeRay;
+
+
+    // ======================================================
+    // Desktop鼠标视线
+    // ======================================================
+
+    [Header("电脑鼠标视线")]
+
+    [Tooltip("拖入 XR Origin > Camera Offset > Main Camera")]
+    public Camera desktopCamera;
+
+    [Tooltip("拖入 DesktopGazeCanvas 上的 DesktopMouseGaze")]
+    public DesktopMouseGaze desktopMouseGaze;
+
+    [Tooltip("电脑视线最远检测距离")]
+    public float desktopRayDistance = 100f;
+
+
+    // ======================================================
+    // 允许触发目标
+    // ======================================================
 
     [Header("允许触发的目标")]
     public Transform[] gazeTargets;
+
+
+    // ======================================================
+    // 恢复彩色
+    // ======================================================
 
     [Header("需要恢复彩色的根物体")]
     [Tooltip("例如直接拖 Oldman 根物体")]
@@ -63,6 +102,15 @@ public class OldmanGazeTarget : MonoBehaviour
 
 
     // ======================================================
+    // Keyboard帮助
+    // ======================================================
+
+    [Header("Keyboard 帮助")]
+    [Tooltip("拖入 XR Origin 上的 OldmanDesktopHelpShortcut")]
+    public OldmanDesktopHelpShortcut desktopHelpShortcut;
+
+
+    // ======================================================
     // 注视设置
     // ======================================================
 
@@ -72,8 +120,15 @@ public class OldmanGazeTarget : MonoBehaviour
     public float gazeBreakTolerance = 0.5f;
 
 
+    // ======================================================
+    // 调试
+    // ======================================================
+
     [Header("调试")]
     public bool showDebugLog = false;
+
+    [Tooltip("Scene窗口显示电脑模式射线")]
+    public bool showDesktopRay = true;
 
 
     // ======================================================
@@ -101,9 +156,7 @@ public class OldmanGazeTarget : MonoBehaviour
 
     private void Start()
     {
-        // 收集所有需要变色的 Renderer
         CollectAllColorRenderers();
-
 
         if (allColorRenderers == null ||
             allColorRenderers.Length == 0)
@@ -115,21 +168,14 @@ public class OldmanGazeTarget : MonoBehaviour
             return;
         }
 
-
-        // 保存原始彩色材质
         SaveOriginalMaterials();
 
-
-        // 游戏开始先变成黑白灰
         ApplyGrayscale();
 
-
-        // 对话框开始隐藏
         if (speechBubble != null)
         {
             speechBubble.SetActive(false);
         }
-
 
         gazeTimer = 0f;
 
@@ -150,26 +196,17 @@ public class OldmanGazeTarget : MonoBehaviour
         if (!initialized)
             return;
 
-
-        // 已经恢复彩色以后，不再重复触发
         if (hasRevealedColor)
             return;
 
-
-        if (eyeGazeRay == null)
-            return;
-
-
         bool lookingAtOldman =
             IsLookingAtOldman();
-
 
         if (lookingAtOldman)
         {
             lookAwayTimer = 0f;
 
             gazeTimer += Time.deltaTime;
-
 
             if (showDebugLog)
             {
@@ -181,8 +218,6 @@ public class OldmanGazeTarget : MonoBehaviour
                 );
             }
 
-
-            // 注视时间达到要求
             if (gazeTimer >= requiredGazeTime)
             {
                 RevealColor();
@@ -192,8 +227,6 @@ public class OldmanGazeTarget : MonoBehaviour
         {
             lookAwayTimer += Time.deltaTime;
 
-
-            // 短暂移开视线不会马上清零
             if (lookAwayTimer >
                 gazeBreakTolerance)
             {
@@ -211,29 +244,113 @@ public class OldmanGazeTarget : MonoBehaviour
 
     private bool IsLookingAtOldman()
     {
-        if (eyeGazeRay == null)
+        if (desktopMode)
+        {
+            return IsDesktopLookingAtOldman();
+        }
+
+        return IsVRLookingAtOldman();
+    }
+
+
+    // ======================================================
+    // Desktop鼠标视线
+    // ======================================================
+
+    private bool IsDesktopLookingAtOldman()
+    {
+        if (desktopCamera == null)
             return false;
 
+        if (desktopMouseGaze == null)
+            return false;
+
+        Vector2 screenPosition =
+            desktopMouseGaze.GetGazeScreenPosition();
+
+        Ray ray =
+            desktopCamera.ScreenPointToRay(
+                screenPosition
+            );
+
+        if (showDesktopRay)
+        {
+            Debug.DrawRay(
+                ray.origin,
+                ray.direction * desktopRayDistance,
+                Color.green
+            );
+        }
+
+        RaycastHit hit;
+
+        if (!Physics.Raycast(
+                ray,
+                out hit,
+                desktopRayDistance))
+        {
+            return false;
+        }
+
+        if (hit.collider == null)
+            return false;
+
+        Transform hitTransform =
+            hit.collider.transform;
+
+        if (showDebugLog)
+        {
+            Debug.Log(
+                "[Oldman Desktop Gaze] 当前看到：" +
+                hitTransform.name
+            );
+        }
+
+        return IsTargetTransform(
+            hitTransform
+        );
+    }
+
+
+    // ======================================================
+    // VR真实眼动
+    // ======================================================
+
+    private bool IsVRLookingAtOldman()
+    {
+        if (eyeGazeRay == null)
+            return false;
 
         if (!eyeGazeRay.HasHit)
             return false;
 
-
         Collider hitCollider =
             eyeGazeRay.CurrentHit.collider;
-
 
         if (hitCollider == null)
             return false;
 
-
         Transform hitTransform =
             hitCollider.transform;
 
+        return IsTargetTransform(
+            hitTransform
+        );
+    }
+
+
+    // ======================================================
+    // 判断命中的物体是不是 gazeTargets
+    // ======================================================
+
+    private bool IsTargetTransform(
+        Transform hitTransform)
+    {
+        if (hitTransform == null)
+            return false;
 
         if (gazeTargets == null)
             return false;
-
 
         for (int i = 0;
              i < gazeTargets.Length;
@@ -242,21 +359,15 @@ public class OldmanGazeTarget : MonoBehaviour
             Transform target =
                 gazeTargets[i];
 
-
             if (target == null)
                 continue;
 
-
-            // 直接看中目标
             if (hitTransform == target)
                 return true;
 
-
-            // 看中目标的子物体
             if (hitTransform.IsChildOf(target))
                 return true;
         }
-
 
         return false;
     }
@@ -271,7 +382,6 @@ public class OldmanGazeTarget : MonoBehaviour
         List<Renderer> rendererList =
             new List<Renderer>();
 
-
         if (colorRoots == null)
         {
             allColorRenderers =
@@ -280,7 +390,6 @@ public class OldmanGazeTarget : MonoBehaviour
             return;
         }
 
-
         for (int i = 0;
              i < colorRoots.Length;
              i++)
@@ -288,15 +397,12 @@ public class OldmanGazeTarget : MonoBehaviour
             Transform root =
                 colorRoots[i];
 
-
             if (root == null)
                 continue;
-
 
             Renderer[] foundRenderers =
                 root.GetComponentsInChildren
                 <Renderer>(true);
-
 
             for (int j = 0;
                  j < foundRenderers.Length;
@@ -305,10 +411,8 @@ public class OldmanGazeTarget : MonoBehaviour
                 Renderer r =
                     foundRenderers[j];
 
-
                 if (r == null)
                     continue;
-
 
                 if (!rendererList.Contains(r))
                 {
@@ -316,7 +420,6 @@ public class OldmanGazeTarget : MonoBehaviour
                 }
             }
         }
-
 
         allColorRenderers =
             rendererList.ToArray();
@@ -333,7 +436,6 @@ public class OldmanGazeTarget : MonoBehaviour
             new Material
             [allColorRenderers.Length][];
 
-
         for (int i = 0;
              i < allColorRenderers.Length;
              i++)
@@ -341,10 +443,8 @@ public class OldmanGazeTarget : MonoBehaviour
             Material[] materials =
                 allColorRenderers[i].materials;
 
-
             originalMaterials[i] =
                 new Material[materials.Length];
-
 
             for (int j = 0;
                  j < materials.Length;
@@ -377,13 +477,11 @@ public class OldmanGazeTarget : MonoBehaviour
             }
         }
 
-
         // 指定部件覆盖成中灰
         ApplyMaterialToRenderers(
             midRenderers,
             grayMid
         );
-
 
         // 指定部件覆盖成深灰
         ApplyMaterialToRenderers(
@@ -400,10 +498,8 @@ public class OldmanGazeTarget : MonoBehaviour
         if (renderers == null)
             return;
 
-
         if (material == null)
             return;
-
 
         for (int i = 0;
              i < renderers.Length;
@@ -425,15 +521,12 @@ public class OldmanGazeTarget : MonoBehaviour
             material == null)
             return;
 
-
         Material[] currentMaterials =
             renderer.materials;
-
 
         Material[] newMaterials =
             new Material
             [currentMaterials.Length];
-
 
         for (int i = 0;
              i < newMaterials.Length;
@@ -442,7 +535,6 @@ public class OldmanGazeTarget : MonoBehaviour
             newMaterials[i] =
                 material;
         }
-
 
         renderer.materials =
             newMaterials;
@@ -458,15 +550,11 @@ public class OldmanGazeTarget : MonoBehaviour
         if (!initialized)
             return;
 
-
         if (hasRevealedColor)
             return;
 
-
         hasRevealedColor = true;
 
-
-        // 恢复所有原始彩色材质
         for (int i = 0;
              i < allColorRenderers.Length;
              i++)
@@ -474,18 +562,35 @@ public class OldmanGazeTarget : MonoBehaviour
             if (allColorRenderers[i] == null)
                 continue;
 
-
             allColorRenderers[i].materials =
                 originalMaterials[i];
         }
-
 
         Debug.Log(
             "[OldmanGazeTarget] 老人已恢复彩色。"
         );
 
 
-        // 开始第一次求助
+        // ==================================================
+        // Keyboard模式：
+        // 老人恢复彩色以后开放 E 帮助
+        // ==================================================
+
+        if (desktopMode &&
+            desktopHelpShortcut != null)
+        {
+            desktopHelpShortcut.ShowHelpHint();
+
+            if (showDebugLog)
+            {
+                Debug.Log(
+                    "[OldmanGazeTarget] Keyboard E 帮助已解锁。"
+                );
+            }
+        }
+
+
+        // 开始原来的求助对话
         StartFirstDialogue();
     }
 
@@ -496,14 +601,12 @@ public class OldmanGazeTarget : MonoBehaviour
 
     private void StartFirstDialogue()
     {
-        // 防止协程重复
         if (dialogueCoroutine != null)
         {
             StopCoroutine(
                 dialogueCoroutine
             );
         }
-
 
         dialogueCoroutine =
             StartCoroutine(
@@ -520,24 +623,19 @@ public class OldmanGazeTarget : MonoBehaviour
             speechBubble.SetActive(true);
         }
 
-
-        // 播放指定语音
+        // 播放语音
         if (oldmanAudioSource != null)
         {
-            // 如果 Inspector 单独拖了语音
             if (helpVoiceClip != null)
             {
                 oldmanAudioSource.clip =
                     helpVoiceClip;
             }
 
-
             if (oldmanAudioSource.clip != null)
             {
                 oldmanAudioSource.Play();
 
-
-                // 等语音播放完成
                 while (oldmanAudioSource.isPlaying)
                 {
                     yield return null;
@@ -545,20 +643,15 @@ public class OldmanGazeTarget : MonoBehaviour
             }
             else
             {
-                // 没有语音时，
-                // 字幕至少显示 3 秒
                 yield return
                     new WaitForSeconds(3f);
             }
         }
         else
         {
-            // 没 Audio Source，
-            // 字幕显示 3 秒
             yield return
                 new WaitForSeconds(3f);
         }
-
 
         // 语音结束关闭字幕
         if (speechBubble != null)
@@ -566,11 +659,7 @@ public class OldmanGazeTarget : MonoBehaviour
             speechBubble.SetActive(false);
         }
 
-
-        // ==================================================
-        // 老人说完话以后，开始两个箱子的搬运任务
-        // ==================================================
-
+        // 老人说完话以后开始箱子任务
         if (boxTaskManager != null)
         {
             boxTaskManager.BeginBoxTask();
@@ -589,7 +678,6 @@ public class OldmanGazeTarget : MonoBehaviour
             );
         }
 
-
         dialogueCoroutine = null;
     }
 
@@ -603,13 +691,11 @@ public class OldmanGazeTarget : MonoBehaviour
         if (!initialized)
             return;
 
-
         gazeTimer = 0f;
 
         lookAwayTimer = 0f;
 
         hasRevealedColor = false;
-
 
         if (dialogueCoroutine != null)
         {
@@ -620,21 +706,23 @@ public class OldmanGazeTarget : MonoBehaviour
             dialogueCoroutine = null;
         }
 
-
         if (oldmanAudioSource != null)
         {
             oldmanAudioSource.Stop();
         }
-
 
         if (speechBubble != null)
         {
             speechBubble.SetActive(false);
         }
 
+        // Keyboard E 也一起重新锁住
+        if (desktopHelpShortcut != null)
+        {
+            desktopHelpShortcut.ResetDesktopHelp();
+        }
 
         ApplyGrayscale();
-
 
         Debug.Log(
             "[OldmanGazeTarget] 老人已重新变成黑白灰。"

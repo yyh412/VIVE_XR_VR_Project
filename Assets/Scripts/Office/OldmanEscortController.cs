@@ -175,6 +175,7 @@ public class OldmanEscortController : MonoBehaviour
             speechBubble.SetActive(false);
         }
 
+
         if (agent != null)
         {
             agent.speed = moveSpeed;
@@ -517,8 +518,7 @@ public class OldmanEscortController : MonoBehaviour
         );
 
 
-        // ★ 注意
-        // 这里老人完全不转身
+        // 老人不转身
         // 只让 SpeechBubble 自己面对玩家
     }
 
@@ -665,7 +665,7 @@ public class OldmanEscortController : MonoBehaviour
         );
 
 
-        // ★ 老人不转身
+        // 老人不转身
     }
 
 
@@ -762,14 +762,14 @@ public class OldmanEscortController : MonoBehaviour
         );
 
 
-        // ★ 这里不转 Oldman
-        // ★ 不转 Wheelchair
-        // ★ 不转 Neck
+        // 不转 Oldman
+        // 不转 Wheelchair
+        // 不转 Neck
     }
 
 
     // =====================================================
-    // 到电梯以后等待玩家进入 2m
+    // 到电梯以后等待玩家进入指定距离
     // =====================================================
 
     private void HandleElevatorWaiting()
@@ -793,7 +793,7 @@ public class OldmanEscortController : MonoBehaviour
             );
 
 
-        // 玩家进入 2 米
+        // 玩家进入指定范围
         if (distance <=
             finalTalkDistance)
         {
@@ -883,11 +883,9 @@ public class OldmanEscortController : MonoBehaviour
 
 
         // =================================================
-        // ★ 不关闭文本框
-        // =================================================
+        // 不关闭文本框
         //
         // Press the elevator button...
-        //
         // 这句话会一直显示
         // =================================================
 
